@@ -34,7 +34,7 @@ var dim = {
 }
 
 function getPitch(id) {
-    return id + 48;
+    return id + 36;
 }
 
 function boxW() {
@@ -163,7 +163,7 @@ function init() {
             canvas.addEventListener('mouseup', end);
             canvas.addEventListener('mouseout', end);
             canvas.addEventListener('touchstart', function(ev) {
-                alert('touch');
+                alert(ev.pageX);
             });
             globals.canvas = canvas;
             noteToAltColor = buildNoteToAltColor();
