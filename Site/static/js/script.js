@@ -21,7 +21,7 @@ var noteToAltColor;
 function buildNoteToAltColor() {
     ret = {};
     for (var n in noteToColor) {
-        ret[n] = '#' + tinycolor(noteToColor[n]).desaturate(30).lighten(5).brighten(20).toHex();
+        ret[n] = '#' + tinycolor(noteToColor[n]).desaturate(20).lighten(3).brighten(15).toHex();
     };
     return ret;
 }
@@ -29,19 +29,17 @@ function buildNoteToAltColor() {
 var notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 var lowC = 0;
 var dim = {
-    x: 3,
-    y: 3
+    x: 4,
+    y: 6
 }
 
 function boxW() {
     var ret = Math.floor((globals.canvas.width / dim.x));
-    //console.log('boxW: ' + ret);
     return ret;
 }
 
 function boxH() {
     var ret = Math.floor((globals.canvas.height / dim.y));
-    //console.log('boxH: ' + ret);
     return ret;
 }
 
@@ -98,11 +96,9 @@ function getBoxFromCoord(xy) {
             ctx.fillRect(this.bounds.xy.x, this.bounds.xy.y, this.bounds.wh.x, this.bounds.wh.y);
         },
         'down': function() {
-            console.log(this.id + ' down');
             this.drawAlt();
         },
         'up': function() {
-            console.log(this.id + ' up');
             this.draw();
         }
     };
@@ -130,12 +126,28 @@ function xyFromEvent(ev) {
 function init() {
     canvas = document.getElementById('canvas');
     canvas.addEventListener('touchstart', function(ev) {
-        console.log('touch');
     });
-    canvas.onclick = function(ev) {
+    var handler = function(ev) {
         var list = [resolve(xyFromEvent(ev))];
         touches(list);
     }
+    var clickstate = false;
+    var start = function(ev) {
+        clickstate = true;
+        handler(ev);
+    };
+    var end = function(ev) {
+        clickstate = false;
+        touches([]);
+    };
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', function(ev) {
+        if (clickstate) {
+            handler(ev);
+        }
+    });
+    canvas.addEventListener('mouseup', end);
+    canvas.addEventListener('mouseout', end);
     globals.canvas = canvas;
     noteToAltColor = buildNoteToAltColor();
     resize();
