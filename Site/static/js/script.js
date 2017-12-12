@@ -29,12 +29,12 @@ function buildNoteToAltColor() {
 var notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 var lowC = 0;
 var dim = {
-    x: 4,
+    x: 9,
     y: 5
 }
 
 function getPitch(id) {
-    return id + 70;
+    return id + 50;
 }
 
 function boxW() {
@@ -107,6 +107,7 @@ function getBoxFromCoord(xy) {
         },
         up: function() {
             this.draw();
+            MIDI.noteOff(0, getPitch(this.offset), 0);
         }
     };
 }

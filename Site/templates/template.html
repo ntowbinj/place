@@ -6,6 +6,12 @@
         <script type="text/javascript" src="{{ url_for('static', filename='js/hammer.min.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='js/script.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='js/tinycolor.js') }}"></script>
+        {% for f in ['AudioDetect', 'LoadPlugin', 'Plugin', 'Player'] %}
+        <script src="{{ url_for('static', filename='js/MIDI.js/js/MIDI/' ~ f ~ '.js') }}"></script>
+        {% endfor %}
+        {% for f in ['js/Window/DOMLoader.XMLHttp', 'js/Widgets/Loader', 'inc/Base64', 'inc/base64binary'] %}
+        <script src="{{ url_for('static', filename='js/MIDI.js/' ~ f ~ '.js') }}"></script>
+        {% endfor %}
     </head>
     <body>
         <canvas style="height: 100%; width: 100%;" id="canvas"></canvas>
