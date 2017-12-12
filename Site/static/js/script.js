@@ -1,4 +1,4 @@
-var constants = {};
+var globals = {};
 var ctx;
 var noteToColor = {
     'C': '#fd0100',
@@ -28,40 +28,41 @@ var dim = {
     x: 4,
     y: 6
 }
+
+function _xy(x, y) {
+    return {'x': x, 'y': y};
+}
 function getNoteFromOffset(o) {
     var idx = (lowC + o) % notes.length;
     return notes[idx];
 }
 var crossColumnInterval = 5;
 
-function coordToNoteOffset(x, y) {
-    return x*crossColumnInterval + y;
+function coordToNoteOffset(xy) {
+    return xy.x*crossColumnInterval + xy.y;
 }
 
-function getBoundsForCoord(x, y) {
+function getBoundsForCoord(xy) {
     return {
-        'x': x * (constants.w / dim.x),
-        'y': y * (constants.h / dim.y),
-        'w': (constants.w / dim.x),
-        'h': (constants.h / dim.y)
+        'xy': _xy(xy.x * (globals.w / dim.x), xy.y * (globals.h / dim.y)),
+        'wh': _xy((globals.w / dim.x), (globals.h / dim.y))
     }
 }
 
-function getBoxFromCoord(x, y) {
-    var offset = coordToNoteOffset(x, y);
+function getBoxFromCoord(xy) {
+    var offset = coordToNoteOffset(xy);
     var note = getNoteFromOffset(offset);
     var color = noteToColor[note];
     return {
-        'x': x,
-        'y': y,
+        'xy': xy,
         'offset': offset,
         'note': note,
         'color': color,
         'altColor': noteToAltColor[note],
-        'bounds': getBoundsForCoord(x, y),
+        'bounds': getBoundsForCoord(xy),
         'draw': function() {
             ctx.fillStyle = this.color;
-            ctx.fillRect(this.bounds.x, this.bounds.y, this.bounds.w, this.bounds.h);
+            ctx.fillRect(this.bounds.xy.x, this.bounds.xy.y, this.bounds.wh.x, this.bounds.wh.y);
         }
     };
 }
@@ -70,7 +71,7 @@ function getGrid() {
     var grid = [];
     for (var i = 0; i < dim.x; i++) {
         for (var j = 0; j < dim.y; j++) {
-            grid.push(getBoxFromCoord(i, j));
+            grid.push(getBoxFromCoord(_xy(i, j)));
         }
     }
     return grid;
@@ -90,8 +91,9 @@ function init() {
     ctx = canvas.getContext('2d');
     ctx.fillStyle = '#eee';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    constants.w = canvas.width;
-    constants.h = canvas.height;
+    globals.canvas = canvas;
+    globals.w = canvas.width;
+    globals.h = canvas.height;
     noteToAltColor = buildNoteToAltColor();
 }
 
