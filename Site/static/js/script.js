@@ -34,7 +34,7 @@ var dim = {
 }
 
 function getPitch(id) {
-    return id + 50;
+    return id + 48;
 }
 
 function boxW() {
