@@ -30,7 +30,11 @@ var notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 var lowC = 0;
 var dim = {
     x: 4,
-    y: 6
+    y: 5
+}
+
+function getPitch(id) {
+    return id + 70;
 }
 
 function boxW() {
@@ -54,7 +58,7 @@ function resolve(xy) {
     );
 }
 
-function getNoteFromOffset(o) {
+function getNoteDisplayFromOffset(o) {
     var idx = (lowC + o) % notes.length;
     return notes[idx];
 }
@@ -77,15 +81,16 @@ function toId(xy) {
 
 function getBoxFromCoord(xy) {
     var offset = coordToNoteOffset(xy);
-    var note = getNoteFromOffset(offset);
-    var color = noteToColor[note];
+    var noteDisplay = getNoteDisplayFromOffset(offset);
+    var color = noteToColor[noteDisplay];
     return {
         xy: xy,
         id: toId(xy),
         offset: offset,
-        note: note,
+        noteDisplay: noteDisplay,
+        note: this.id + lowC,
         color: color,
-        altColor: noteToAltColor[note],
+        altColor: noteToAltColor[noteDisplay],
         bounds: getBoundsForCoord(xy),
         draw: function() {
             ctx.fillStyle = this.color;
@@ -96,7 +101,9 @@ function getBoxFromCoord(xy) {
             ctx.fillRect(this.bounds.xy.x, this.bounds.xy.y, this.bounds.wh.x, this.bounds.wh.y);
         },
         down: function() {
+            console.log('down: ' + this.id);
             this.drawAlt();
+            MIDI.noteOn(0, getPitch(this.offset), 127, 0); //for instant start
         },
         up: function() {
             this.draw();
@@ -124,33 +131,45 @@ function xyFromEvent(ev) {
 
 
 function init() {
-    canvas = document.getElementById('canvas');
-    canvas.addEventListener('touchstart', function(ev) {
-    });
-    var handler = function(ev) {
-        var list = [resolve(xyFromEvent(ev))];
-        touches(list);
-    }
-    var clickstate = false;
-    var start = function(ev) {
-        clickstate = true;
-        handler(ev);
-    };
-    var end = function(ev) {
-        clickstate = false;
-        touches([]);
-    };
-    canvas.addEventListener('mousedown', start);
-    canvas.addEventListener('mousemove', function(ev) {
-        if (clickstate) {
-            handler(ev);
+    MIDI.loader = new widgets.Loader;
+    MIDI.loadPlugin({
+        instrument: "acoustic_grand_piano",
+        soundfontUrl: "/static/js/MIDI.js/soundfont/",
+        callback: function() {
+            MIDI.loader.stop();	
+            MIDI.noteOn(0, 0, 0, 0); //for instant start
+            MIDI.noteOff(0, 0, 100);
+            canvas = document.getElementById('canvas');
+            var handler = function(ev) {
+                var list = [resolve(xyFromEvent(ev))];
+                touches(list);
+            }
+            var clickstate = false;
+            var start = function(ev) {
+                clickstate = true;
+                handler(ev);
+            };
+            var end = function(ev) {
+                clickstate = false;
+                touches([]);
+            };
+            canvas.addEventListener('mousedown', start);
+            canvas.addEventListener('mousemove', function(ev) {
+                if (clickstate) {
+                    handler(ev);
+                }
+            });
+            canvas.addEventListener('mouseup', end);
+            canvas.addEventListener('mouseout', end);
+            canvas.addEventListener('touchstart', function(ev) {
+                alert('touch');
+            });
+            globals.canvas = canvas;
+            noteToAltColor = buildNoteToAltColor();
+            window.addEventListener('resize', resize);
+            setTimeout(resize, 500);
         }
     });
-    canvas.addEventListener('mouseup', end);
-    canvas.addEventListener('mouseout', end);
-    globals.canvas = canvas;
-    noteToAltColor = buildNoteToAltColor();
-    resize();
 }
 
 function touches(list) {
@@ -199,6 +218,7 @@ function resize() {
 }
 
 function draw() {
+    console.log('draw');
     grid = getGrid();
     for (var n = 0; n < grid.length; n++) {
         grid[n].draw();
@@ -207,4 +227,3 @@ function draw() {
 
 
 window.addEventListener('load', init);
-window.addEventListener('resize', resize);
