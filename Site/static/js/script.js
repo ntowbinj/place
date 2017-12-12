@@ -44,7 +44,7 @@ function boxH() {
 }
 
 function _xy(x, y) {
-    return {'x': x, 'y': y};
+    return {x: x, y: y};
 }
 
 function resolve(xy) {
@@ -66,8 +66,8 @@ function coordToNoteOffset(xy) {
 
 function getBoundsForCoord(xy) {
     return {
-        'xy': _xy(xy.x * boxW(), xy.y * boxH()),
-        'wh': _xy(boxW(), boxH())
+        xy: _xy(xy.x * boxW(), xy.y * boxH()),
+        wh: _xy(boxW(), boxH())
     }
 }
 
@@ -80,25 +80,25 @@ function getBoxFromCoord(xy) {
     var note = getNoteFromOffset(offset);
     var color = noteToColor[note];
     return {
-        'xy': xy,
-        'id': toId(xy),
-        'offset': offset,
-        'note': note,
-        'color': color,
-        'altColor': noteToAltColor[note],
-        'bounds': getBoundsForCoord(xy),
-        'draw': function() {
+        xy: xy,
+        id: toId(xy),
+        offset: offset,
+        note: note,
+        color: color,
+        altColor: noteToAltColor[note],
+        bounds: getBoundsForCoord(xy),
+        draw: function() {
             ctx.fillStyle = this.color;
             ctx.fillRect(this.bounds.xy.x, this.bounds.xy.y, this.bounds.wh.x, this.bounds.wh.y);
         },
-        'drawAlt': function() {
+        drawAlt: function() {
             ctx.fillStyle = this.altColor;
             ctx.fillRect(this.bounds.xy.x, this.bounds.xy.y, this.bounds.wh.x, this.bounds.wh.y);
         },
-        'down': function() {
+        down: function() {
             this.drawAlt();
         },
-        'up': function() {
+        up: function() {
             this.draw();
         }
     };
