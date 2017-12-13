@@ -1,6 +1,9 @@
 var globals = {
     downBoxes: {}
 };
+var state = {
+    running: false
+}
 var ctx;
 var noteToColor = {
     'C': '#fd0100',
@@ -29,7 +32,7 @@ function buildNoteToAltColor() {
 var notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 var lowC = 0;
 var dim = {
-    x: 9,
+    x: 7,
     y: 5
 }
 
@@ -101,7 +104,6 @@ function getBoxFromCoord(xy) {
             ctx.fillRect(this.bounds.xy.x, this.bounds.xy.y, this.bounds.wh.x, this.bounds.wh.y);
         },
         down: function() {
-            console.log('down: ' + this.id);
             this.drawAlt();
             MIDI.noteOn(0, getPitch(this.offset), 127, 0); //for instant start
         },
@@ -146,7 +148,7 @@ function init() {
                 touches(list);
             }
             var clickstate = false;
-            var start = function(ev) {
+            var enter = function(ev) {
                 clickstate = true;
                 handler(ev);
             };
@@ -154,26 +156,45 @@ function init() {
                 clickstate = false;
                 touches([]);
             };
-            canvas.addEventListener('mousedown', start);
-            canvas.addEventListener('mousemove', function(ev) {
-                if (clickstate) {
-                    handler(ev);
+            var doTouch = function(ev) {
+                ev.preventDefault();
+                var touchList = [];
+                tl = ev;
+                for (var i = 0; i < ev.touches.length; i++) {
+                    touchList.push(resolve(xyFromEvent(ev.touches.item(i))));
                 }
-            });
-            canvas.addEventListener('mouseup', end);
-            canvas.addEventListener('mouseout', end);
-            canvas.addEventListener('touchstart', function(ev) {
-                alert(ev.pageX);
-            });
+                touches(touchList);
+            };
+            if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
+                canvas.addEventListener('touchstart', doTouch);
+                canvas.addEventListener('touchmove', doTouch);
+                canvas.addEventListener('touchend', function(ev) {
+                    touches([]);
+                });
+            } else {
+                canvas.addEventListener('mousedown', enter);
+                canvas.addEventListener('mousemove', function(ev) {
+                    if (clickstate) {
+                        handler(ev);
+                    }
+                });
+                canvas.addEventListener('mouseup', end);
+                canvas.addEventListener('mouseout', end);
+            }
             globals.canvas = canvas;
             noteToAltColor = buildNoteToAltColor();
             window.addEventListener('resize', resize);
-            setTimeout(resize, 500);
+            var resizeAndStart = function() {
+                resize();
+                start();
+            }
+            setTimeout(resizeAndStart,500);
         }
     });
 }
 
 function touches(list) {
+    console.log(list);
     var boxes = [];
     for (var t = 0; t < list.length; t++) {
         touch = list[t];
@@ -224,6 +245,22 @@ function draw() {
     for (var n = 0; n < grid.length; n++) {
         grid[n].draw();
     }
+}
+
+function success(result) {
+    console.log(result);
+}
+
+function start() {
+    state.running = true;
+    run();
+}
+
+function run() {
+    if (!state.running) {
+        return;
+    }
+    $.get("/lessons", {}, success);
 }
 
 
