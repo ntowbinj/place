@@ -1,8 +1,16 @@
 var globals = {
     downBoxes: {}
 };
+
+var playListen = {
+    PLAYING: 0,
+    LISTENING: 1
+}
+
 var state = {
-    running: false
+    running: false,
+    downHandlers: {},
+    playListen: playListen.PLAYING
 }
 var ctx;
 var noteToColor = {
@@ -217,7 +225,12 @@ function doDownBoxes(boxes) {
     for (var b = 0 ; b < boxes.length; b++) {
         var box = boxes[b];
         if (!(box.id in globals.downBoxes)) {
-            box.down();
+            if (state.playListen == playListen.LISTENING) {
+                box.down();
+            }
+            for (var k in state.downHandlers) {
+                state.downHandlers[k](box.offset);
+            }
             globals.downBoxes[box.id] = 1;
         }
     }
@@ -247,13 +260,89 @@ function draw() {
     }
 }
 
+function finishBatch() {
+    console.log('done');
+}
+
 function success(result) {
-    console.log(result);
+    doAllLessons(result.lessonList, finishBatch);
 }
 
 function start() {
     state.running = true;
     run();
+}
+
+function noteOn(v) {
+    console.log('note on: ' + v);
+    MIDI.noteOn(0, v, 127, 0); 
+}
+
+function noteOff(v) {
+    console.log('note off: ' + v);
+    MIDI.noteOff(0, v, 0); 
+}
+
+function doPlayLessonResume(lesson, index, next) {
+    if (index >= lesson.notes.length) {
+        next();
+        return;
+    }
+    var pitch = lesson.notes[index];
+    noteOn(pitch);
+    setTimeout(function() {
+        noteOff(pitch);
+        setTimeout(
+            function() { doPlayLessonResume(lesson, index + 1, next); },
+            lesson.millis
+        );
+    }, lesson.noteDuration);
+}
+
+var DOWN_HANDLER = 'DOWN_HANDLER';
+
+function doRecordResponse(lesson, finish) {
+    state.playListen = playListen.LISTENING;
+    var downHandler = function(note) {
+        console.log('played: ' + note);
+    }
+    state.downHandlers[DOWN_HANDLER] = downHandler;
+    console.log('play it back');
+    setTimeout(
+        function() {
+            delete state.downHandlers[DOWN_HANDLER];
+            finish();
+        },
+        lesson.time
+    )
+}
+
+function doLesson(lesson, next) {
+    state.playListen = playListen.PLAYING;
+    doPlayLessonResume(
+        lesson,
+        0,
+        function() {
+            doRecordResponse(lesson, next);
+        }
+    );
+}
+
+function doAllLessons(lessonList, finish) {
+    doAllLessonsResume(lessonList, 0, finish);
+}
+
+function doAllLessonsResume(lessonList, index, finish) {
+    if (index >= lessonList.length) {
+        finish();
+        return;
+    }
+    doLesson(
+        lessonList[index],
+        function() {
+            doAllLessonsResume(lessonList, index + 1, finish)
+        }
+    );
 }
 
 function run() {
