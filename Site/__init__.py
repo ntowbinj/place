@@ -9,8 +9,9 @@ def hello():
     return render_template('template.html')
 
 lessonList = [
-    dict(lesson_key='a', millis=300, noteDuration=200, notes = [58, 60], base=58, time=10000),
-    dict(lesson_key='b', millis=300, noteDuration=200, notes = [78, 70], base=70, time=10000)
+    dict(lesson_key='a', millis=300, noteDuration=200, notes = [58, 60], base=58, time=10000, tolerance=1),
+    dict(lesson_key='b', millis=300, noteDuration=200, notes = [65, 56], base=56, time=10000, tolerance=1),
+    dict(lesson_key='b', millis=300, noteDuration=200, notes = [45, 47], base=45, time=10000, tolerance=1)
 ]
 
 

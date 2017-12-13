@@ -1,5 +1,7 @@
 var globals = {
-    downBoxes: {}
+    downBoxes: {},
+    DONE_WAIT_SUCCESS: 1500,
+    DONE_WAIT_FAIL: 3000,
 };
 
 var playListen = {
@@ -7,7 +9,11 @@ var playListen = {
     LISTENING: 1
 }
 
+var GROUP = 123;
+
 var state = {
+    timeouts: {},
+    basePitch: 36,
     running: false,
     downHandlers: {},
     playListen: playListen.PLAYING
@@ -45,7 +51,7 @@ var dim = {
 }
 
 function getPitch(offset) {
-    return offset + 36;
+    return offset + state.basePitch;
 }
 
 function boxW() {
@@ -70,9 +76,11 @@ function resolve(xy) {
 }
 
 function getNoteDisplayFromOffset(o) {
-    var idx = (lowC + o) % notes.length;
+    var pitch = getPitch(o);
+    var idx = (lowC + pitch) % notes.length;
     return notes[idx];
 }
+
 var crossColumnInterval = 5;
 
 function coordToNoteOffset(xy) {
@@ -265,6 +273,11 @@ function success(result) {
     doAllLessons(result.lessonList, finishBatch);
 }
 
+function setBasePitch(pitch) {
+    state.basePitch = pitch;
+    resize();
+}
+
 function start() {
     state.running = true;
     run();
@@ -285,9 +298,9 @@ function doPlayLessonResume(lesson, index, next) {
     }
     var pitch = lesson.notes[index];
     noteOn(pitch);
-    setTimeout(function() {
+    timeout(GROUP, function() {
         noteOff(pitch);
-        setTimeout(
+        timeout(GROUP,
             function() { doPlayLessonResume(lesson, index + 1, next); },
             lesson.millis
         );
@@ -296,19 +309,71 @@ function doPlayLessonResume(lesson, index, next) {
 
 var DOWN_HANDLER = 'DOWN_HANDLER';
 
+function timeout(group, f, t) {
+    var wrapped = function() {
+        deleteTimeout(group);
+        f();
+    };
+    result = setTimeout(wrapped, t);
+    state.timeouts[group] = result;
+}
+
+function deleteTimeout(group) {
+    delete state.timeouts[group];
+}
+
+function clear(group) {
+    clearTimeout(state.timeouts[group]);
+    delete state.timeouts[group];
+}
+
+function isSubSequence(containee, container) {
+    console.log(containee + ', ' + container);
+    var j = 0;
+    for (var i = 0; i < container.length; i++) {
+        if (j >= containee.length) {
+            return true;
+        }
+        if (containee[j] === container[i]) {
+            j++;
+        }
+    }
+    return j >= containee.length;
+}
+
+function isDone(recording, lesson) {
+    if (recording.length > lesson.notes.length + lesson.tolerance) {
+        return {isDone: true, wait: globals.DONE_WAIT_FAIL};
+    }
+    var success = isSubSequence(lesson.notes, recording);
+    var wait = success ? globals.DONE_WAIT_SUCCESS : globals.DONE_WAIT_BAD;
+    return {isDone: success, wait: wait};
+}
+
 function doRecordResponse(lesson, finish) {
     state.playListen = playListen.LISTENING;
     var recording = [];
-    var downHandler = function(note) {
-        recording.push(note);
-        console.log('played: ' + note);
+    var downHandler = function(offset) {
+        recording.push(getPitch(offset));
+        var isDoneResult = isDone(recording, lesson);
+        if (isDoneResult.isDone) {
+            clear(GROUP);
+            timeout(
+                GROUP,
+                finish,
+                isDoneResult.wait
+            )
+        }
+        console.log('played: ' + offset);
     }
     state.downHandlers[DOWN_HANDLER] = downHandler;
     console.log('play it back');
-    setTimeout(
+    timeout(
+        GROUP,
         function() {
             delete state.downHandlers[DOWN_HANDLER];
             console.log('you played: ' + recording);
+            console.log('success: ' + isDone(recording, lesson));
             finish();
         },
         lesson.time
@@ -317,6 +382,7 @@ function doRecordResponse(lesson, finish) {
 
 function doLesson(lesson, next) {
     state.playListen = playListen.PLAYING;
+    setBasePitch(lesson.base);
     doPlayLessonResume(
         lesson,
         0,
