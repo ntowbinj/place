@@ -358,14 +358,13 @@ function doRecordResponse(lesson, finishRecording) {
         delete state.downHandlers[DOWN_HANDLER];
         console.log('you played: ' + recording);
         recordingBuffer[lesson.lesson_key] = recording;
+        flushRecordingBuffer(recordingBuffer);
+        recordingBuffer = {};
         timeout(
             GROUP,
-            function() {
-                finishRecording(recordingBuffer);
-            },
+            finishRecording,
             isDoneResult.wait
         );
-        recordingBuffer = {};
     };
     var downHandler = function(offset) {
         recording.push(getPitch(offset));
@@ -385,18 +384,24 @@ function doRecordResponse(lesson, finishRecording) {
     )
 }
 
+function flushRecordingBuffer(recordingBuffer) {
+    console.log(recordingBuffer);
+    $.post(
+        "/recording",
+        recordingBuffer,
+        function() { console.log('flushed');},
+        'json'
+    );
+}
+
 function doLesson(lesson, next) {
     state.playListen = playListen.PLAYING;
     setBasePitch(lesson.base);
-    var finishRecording = function(recordingBuffer) {
-        console.log(recordingBuffer);
-        next();
-    };
     doPlayLessonResume(
         lesson,
         0,
         function() {
-            doRecordResponse(lesson, finishRecording);
+            doRecordResponse(lesson, next);
         }
     );
 }

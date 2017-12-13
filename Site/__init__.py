@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from collections import namedtuple
 
 app = Flask(__name__)
@@ -23,5 +23,10 @@ def lessons():
     return jsonify(ret)
 
 
-
-
+@app.route("/recording", methods=['POST'])
+def recording():
+    print('flushment')
+    print(request.get_json())
+    print (request)
+    print (request.form)
+    return 'OK';
