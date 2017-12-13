@@ -44,8 +44,8 @@ var dim = {
     y: 5
 }
 
-function getPitch(id) {
-    return id + 36;
+function getPitch(offset) {
+    return offset + 36;
 }
 
 function boxW() {
@@ -86,7 +86,7 @@ function getBoundsForCoord(xy) {
     }
 }
 
-function toId(xy) {
+function toOffset(xy) {
     return (xy.x * dim.y) + xy.y;
 }
 
@@ -96,10 +96,10 @@ function getBoxFromCoord(xy) {
     var color = noteToColor[noteDisplay];
     return {
         xy: xy,
-        id: toId(xy),
+        id: offset,
         offset: offset,
         noteDisplay: noteDisplay,
-        note: this.id + lowC,
+        note: this.offset + lowC,
         color: color,
         altColor: noteToAltColor[noteDisplay],
         bounds: getBoundsForCoord(xy),
@@ -202,11 +202,10 @@ function init() {
 }
 
 function touches(list) {
-    console.log(list);
     var boxes = [];
     for (var t = 0; t < list.length; t++) {
         touch = list[t];
-        boxes.push(grid[toId(touch)]);
+        boxes.push(grid[toOffset(touch)]);
     }
     doDownBoxes(boxes);
 }
@@ -215,7 +214,7 @@ function indexBoxes(boxList) {
     var index = {};
     for (var b = 0; b < boxList.length; b++) {
         var box = boxList[b];
-        index[box.id] = box;
+        index[box.offset] = box;
     }
     return index;
 }
@@ -224,21 +223,21 @@ function doDownBoxes(boxes) {
     var index = indexBoxes(boxes);
     for (var b = 0 ; b < boxes.length; b++) {
         var box = boxes[b];
-        if (!(box.id in globals.downBoxes)) {
+        if (!(box.offset in globals.downBoxes)) {
             if (state.playListen == playListen.LISTENING) {
                 box.down();
             }
             for (var k in state.downHandlers) {
                 state.downHandlers[k](box.offset);
             }
-            globals.downBoxes[box.id] = 1;
+            globals.downBoxes[box.offset] = 1;
         }
     }
-    for (var boxId in globals.downBoxes) {
+    for (var offset in globals.downBoxes) {
         // list containment, O(n)
-        if (!(boxId in index)) {
-            grid[boxId].up();
-            delete globals.downBoxes[boxId];
+        if (!(offset in index)) {
+            grid[offset].up();
+            delete globals.downBoxes[offset];
         }
     }
 }
@@ -253,7 +252,6 @@ function resize() {
 }
 
 function draw() {
-    console.log('draw');
     grid = getGrid();
     for (var n = 0; n < grid.length; n++) {
         grid[n].draw();
@@ -261,7 +259,6 @@ function draw() {
 }
 
 function finishBatch() {
-    console.log('done');
 }
 
 function success(result) {
@@ -274,12 +271,10 @@ function start() {
 }
 
 function noteOn(v) {
-    console.log('note on: ' + v);
     MIDI.noteOn(0, v, 127, 0); 
 }
 
 function noteOff(v) {
-    console.log('note off: ' + v);
     MIDI.noteOff(0, v, 0); 
 }
 
@@ -303,7 +298,9 @@ var DOWN_HANDLER = 'DOWN_HANDLER';
 
 function doRecordResponse(lesson, finish) {
     state.playListen = playListen.LISTENING;
+    var recording = [];
     var downHandler = function(note) {
+        recording.push(note);
         console.log('played: ' + note);
     }
     state.downHandlers[DOWN_HANDLER] = downHandler;
@@ -311,6 +308,7 @@ function doRecordResponse(lesson, finish) {
     setTimeout(
         function() {
             delete state.downHandlers[DOWN_HANDLER];
+            console.log('you played: ' + recording);
             finish();
         },
         lesson.time
