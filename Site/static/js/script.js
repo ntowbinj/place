@@ -350,19 +350,29 @@ function isDone(recording, lesson) {
     return {isDone: success, wait: wait};
 }
 
-function doRecordResponse(lesson, finish) {
+recordingBuffer = {};
+function doRecordResponse(lesson, finishRecording) {
     state.playListen = playListen.LISTENING;
     var recording = [];
+    var finalize = function(isDoneResult) {
+        delete state.downHandlers[DOWN_HANDLER];
+        console.log('you played: ' + recording);
+        recordingBuffer[lesson.lesson_key] = recording;
+        timeout(
+            GROUP,
+            function() {
+                finishRecording(recordingBuffer);
+            },
+            isDoneResult.wait
+        );
+        recordingBuffer = {};
+    };
     var downHandler = function(offset) {
         recording.push(getPitch(offset));
         var isDoneResult = isDone(recording, lesson);
         if (isDoneResult.isDone) {
             clear(GROUP);
-            timeout(
-                GROUP,
-                finish,
-                isDoneResult.wait
-            )
+            finalize(isDoneResult);
         }
         console.log('played: ' + offset);
     }
@@ -370,12 +380,7 @@ function doRecordResponse(lesson, finish) {
     console.log('play it back');
     timeout(
         GROUP,
-        function() {
-            delete state.downHandlers[DOWN_HANDLER];
-            console.log('you played: ' + recording);
-            console.log('success: ' + isDone(recording, lesson));
-            finish();
-        },
+        function() { finalize(isDone(recording, lesson)); },
         lesson.time
     )
 }
@@ -383,11 +388,15 @@ function doRecordResponse(lesson, finish) {
 function doLesson(lesson, next) {
     state.playListen = playListen.PLAYING;
     setBasePitch(lesson.base);
+    var finishRecording = function(recordingBuffer) {
+        console.log(recordingBuffer);
+        next();
+    };
     doPlayLessonResume(
         lesson,
         0,
         function() {
-            doRecordResponse(lesson, next);
+            doRecordResponse(lesson, finishRecording);
         }
     );
 }
