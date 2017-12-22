@@ -3,7 +3,7 @@ import operator as op
 import math
 import random
 import data
-from classes import LessonFactory, Lesson, LessonCreate
+from classes import LessonFactory, Lesson, LessonCreate, Recording
 from itertools import groupby
 
 def demote_random(lesson_factory):
@@ -91,6 +91,12 @@ def get_base_lesson_factory():
 
 
 def get_lessons_for_user(user_id):
+    lesrecs = data.do_select(
+        dict(lessons=Lesson, recordings=Recording),
+        ' FROM lessons JOIN recordings USING (lesson_id) WHERE user_id = %s ORDER BY lessons.lesson_id DESC limit %s',
+        (user_id, 20)
+    )
+    print lesrecs
     return get_lesson_set(user_id, get_lesson_factory([]), 5)
 
 

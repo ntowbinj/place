@@ -45,7 +45,7 @@ recording_fields = [
     'lesson_id',
     'passed',
     'notes',
-    'times'
+    'note_times'
 ]
 
 Recording = namedtuple('Recording', recording_fields)

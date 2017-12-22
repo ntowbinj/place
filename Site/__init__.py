@@ -1,6 +1,8 @@
 import config
 import alg
 import json
+from data import do_insert
+from classes import Recording
 from flask import Flask, render_template, jsonify, request, g, make_response, session
 from collections import namedtuple
 from usercookie import get_or_create_user, hashids
@@ -35,21 +37,35 @@ def make_safe(lesson):
         tolerance=lesson.tolerance
     )
 
+def from_safe_buffer(recording_buffer):
+    res = []
+    for k, v in recording_buffer.items():
+        res.append(from_safe(k, v))
+    return res
+
+def from_safe(lesson_key, safe_recording):
+    return Recording(
+        lesson_id=hashids.decrypt(lesson_key)[0],
+        passed=safe_recording['passed'],
+        notes=safe_recording['notes'],
+        note_times=safe_recording['noteTimes']
+    )
+
 
 @app.route("/lessons")
 def lessons():
     user_id = g.user_id
     lessons = [make_safe(l) for l in alg.get_lessons_for_user(user_id)]
     ret = dict(lessonList=lessons, level=1)
-    print(ret)
-    print jsonify(ret)
     return jsonify(ret)
 
 
 @app.route("/recording", methods=['POST'])
 def recording():
-    print hack_json()
+    recordings = hack_json()
+    for rec in recordings:
+        do_insert('recordings', rec)
     return 'OK';
 
 def hack_json():
-    return json.loads(request.form['json'])
+    return from_safe_buffer(json.loads(request.form['json']))

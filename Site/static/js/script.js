@@ -356,11 +356,11 @@ function isSubSequence(containee, container) {
 function isDone(recording, lesson) {
     var doneLength = lesson.sequence.length + lesson.tolerance;
     if (recording.notes.length > doneLength) {
-        return {isDone: true, wait: globals.DONE_WAIT_FAIL};
+        return {isDone: true, wait: globals.DONE_WAIT_FAIL, success: false};
     }
     var success = isSubSequence(lesson.sequence, recording.notes);
     var wait = success ? globals.DONE_WAIT_SUCCESS : globals.DONE_WAIT_BAD;
-    return {isDone: success, wait: wait};
+    return {isDone: success, wait: wait, success: success};
 }
 
 function listening() {
@@ -371,15 +371,21 @@ function playing() {
     state.playListen = playListen.PLAYING;
 }
 
+function unixtime() {
+    return new Date().getTime();
+}
+
 
 recordingBuffer = {};
 function doRecordResponse(lesson, finishRecording) {
     listening();
     var recording = {};
+    var baseTime = unixtime();
     recording['notes'] = [];
     recording['noteTimes'] = [];
     var finalize = function(isDoneResult) {
         delete state.downHandlers[DOWN_HANDLER];
+        recording['passed'] = isDoneResult.success;
         recordingBuffer[lesson.lessonKey] = recording;
         flushRecordingBuffer(recordingBuffer);
         recordingBuffer = {};
@@ -391,6 +397,7 @@ function doRecordResponse(lesson, finishRecording) {
     };
     var downHandler = function(offset) {
         recording.notes.push(getPitch(offset));
+        recording.noteTimes.push(unixtime() - baseTime);
         var isDoneResult = isDone(recording, lesson);
         if (isDoneResult.isDone) {
             clear(GROUP);

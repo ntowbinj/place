@@ -14,7 +14,7 @@ def get_or_create_user():
         u = data.do_insert('users', user_create)
         session['u'] = hashids.encrypt(u)
     u = session['u']
-    g.user_id = hashids.decrypt(u)
+    g.user_id = hashids.decrypt(u)[0]
 
 
 
