@@ -2,6 +2,7 @@ var globals = {
     downBoxes: {},
     DONE_WAIT_SUCCESS: 1500,
     DONE_WAIT_FAIL: 3000,
+    consecutiveEmpties: 0
 };
 
 var playListen = {
@@ -296,6 +297,12 @@ function start() {
     run();
 }
 
+function stop() {
+    state.running = false;
+    state.playListen = playListen.LISTENING;
+    globals.consecutiveEmpties = 0;
+}
+
 function noteOn(v) {
     MIDI.noteOn(0, v, 127, 0); 
 }
@@ -387,6 +394,16 @@ function doRecordResponse(lesson, finishRecording) {
         delete state.downHandlers[DOWN_HANDLER];
         recording['passed'] = isDoneResult.success;
         recordingBuffer[lesson.lessonKey] = recording;
+        if (recording.notes.length === 0) {
+            globals.consecutiveEmpties++;
+            if (globals.consecutiveEmpties > 1) {
+                stop();
+            }
+        } else {
+            globals.consecutiveEmpties = 0;
+
+        }
+
         flushRecordingBuffer(recordingBuffer);
         recordingBuffer = {};
         timeout(

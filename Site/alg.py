@@ -1,28 +1,31 @@
 import time
+import json
 import operator as op
 import math
 import random
 import data
-from classes import LessonFactory, Lesson, LessonCreate, Recording
+from classes import LessonFactory, Lesson, LessonCreate, Recording, LessonRecording
 from itertools import groupby
 
 def demote_random(lesson_factory):
+    print 'demoting'
     demotions = [demote_rest_millis]
     if lesson_factory.max_interval > 2:
         demotions.append(demote_interval)
     if lesson_factory.length > 2:
         demotions.append(demote_length)
-    rand = floor(time.time()) % len(demotions)
+    rand = int(time.time()) % len(demotions)
     return demotions[rand](lesson_factory)
 
-def promote_random(seed, lesson_factory):
+def promote_random(lesson_factory):
+    print 'promoting'
     promotions = [
         promote_rest_millis,
         promote_interval,
         promote_length
 
     ]
-    rand = floor(time.time()) % len(promotions)
+    rand = int(time.time()) % len(promotions)
     return promotions[rand](lesson_factory)
 
 
@@ -36,30 +39,30 @@ def demote_interval(lesson_factory):
     return change_interval(lesson_factory, -1)
 
 def promote_interval(lesson_factory):
-    return change_interval(lesson_factory, -1)
+    return change_interval(lesson_factory, 1)
 
 def demote_length(lesson_factory):
     return change_length(lesson_factory, -1)
 
 def promote_length(lesson_factory):
-    return change_length(lesson_factory, -1)
+    return change_length(lesson_factory, 1)
 
 def scale_res_millis(lesson_factory, factor):
-    as_dict = lesson_factory._asdict
-    as_dict['rest_millies'] = factor * lesson_factory.rest_millis
+    as_dict = lesson_factory._asdict()
+    as_dict['rest_millis'] = int(factor * lesson_factory.rest_millis)
     return LessonFactory(
         **as_dict
     )
 
 def change_interval(lesson_factory, change):
-    as_dict = lesson_factory._asdict
+    as_dict = lesson_factory._asdict()
     as_dict['max_interval'] = change + lesson_factory.max_interval
     return LessonFactory(
         **as_dict
     )
 
 def change_length(lesson_factory, change):
-    as_dict = lesson_factory._asdict
+    as_dict = lesson_factory._asdict()
     as_dict['length'] = change + lesson_factory.length
     return LessonFactory(
         **as_dict
@@ -67,17 +70,17 @@ def change_length(lesson_factory, change):
 
 def stats_at_max_interval(les_recs):
     count = len(les_recs)
-    successes = sum([1 for r in les_recs.recs if recs.passed])
+    successes = sum([1 for les_rec in les_recs if les_rec.recording.passed])
     time_sum = sum([les_rec.lesson.rest_millis for les_rec in les_recs])
     length_sum = sum([les_rec.lesson.length for les_rec in les_recs])
     success_rate = successes / count
-    avg_time = time_sum / count
-    avg_length = length_sum / count
+    avg_time = int(time_sum / count)
+    avg_length = int(length_sum / count)
     return dict(
-        times=times,
+        avg_time=avg_time,
         success_rate=success_rate,
         count=count,
-        avg_length=avg_time
+        avg_length=avg_length
     )
 
 def get_base_lesson_factory():
@@ -91,46 +94,51 @@ def get_base_lesson_factory():
 
 
 def get_lessons_for_user(user_id):
-    lesrecs = data.do_select(
+    lesrecs = [LessonRecording(**lesrec) for lesrec in data.do_select(
         dict(lessons=Lesson, recordings=Recording),
         ' FROM lessons JOIN recordings USING (lesson_id) WHERE user_id = %s ORDER BY lessons.lesson_id DESC limit %s',
         (user_id, 20)
-    )
-    print lesrecs
-    return get_lesson_set(user_id, get_lesson_factory([]), 5)
+    )]
+    factory = get_lesson_factory(lesrecs)
+    print factory
+    return get_lesson_set(user_id, factory, 5)
 
 
 def get_lesson_factory(recent_lesson_recordings):
+    print 'last 3: ' + json.dumps(recent_lesson_recordings[:3])
     if not recent_lesson_recordings:
         return get_base_lesson_factory()
     by_interval = lambda les_rec: les_rec.lesson.max_interval
     sorted_lesson_recordings = sorted(
         recent_lesson_recordings,
-        by_interval
+        key=by_interval
     )
-    getintv = op.itemgetter('max_interval')
+    getintv = lambda les_rec: les_rec.lesson.max_interval
     stats_by_intv = {}
-    for intv, group in groupby(sorted_lesson_recordings, getintv):
+    for intv, group in groupby(sorted_lesson_recordings, key=getintv):
         stats_by_intv[intv] = stats_at_max_interval(list(group))
-    intvs = reversed(sorted, map(stats_by_intv, getintv))
+    intvs = list(reversed(sorted(stats_by_intv.keys())))
     intv = intvs[0]
     stats = stats_by_intv[intv]
+    print stats
     # TODO make sophisticated
     same = LessonFactory(
             max_interval=intv,
-            rest_millis=round(stats.avg_time),
-            length=round(stats.avg_length),
-            w=reversed(recent_lesson_recordings)[0].lesson.w,
-            h=reversed(recent_lesson_recordings)[0].h,
+            rest_millis=round(stats['avg_time']),
+            length=round(stats['avg_length']),
+            w=next(reversed(recent_lesson_recordings)).lesson.w,
+            h=next(reversed(recent_lesson_recordings)).lesson.h
     )
 
-    if stats.count <= 3:
+    if stats['count'] <= 3:
         return same
-    if stats.count > 3 and stats.success_rate == 0:
+    if stats['count'] > 3 and stats['success_rate'] == 0:
         return demote_random(same)
-    if stats.count > 10 and stats.success_rate > 0.9:
+    if stats['count'] > 3 and stats['success_rate'] == 1:
         return promote_random(same)
-    if stats.count > 10 and stats.success_rate < 0.4:
+    if stats['count'] > 10 and stats['success_rate'] > 0.9:
+        return promote_random(same)
+    if stats['count'] > 10 and stats['success_rate'] < 0.4:
         return demote_random(same)
     return same
 
