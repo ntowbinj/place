@@ -1,9 +1,11 @@
 import time
 import json
+import pdb
 import operator as op
 import math
 import random
 import data
+from collections import defaultdict
 from classes import LessonFactory, Lesson, LessonCreate, Recording, LessonRecording
 from itertools import groupby
 
@@ -68,7 +70,7 @@ def change_length(lesson_factory, change):
         **as_dict
     )
 
-def stats_at_max_interval(les_recs):
+def get_stats(les_recs):
     count = len(les_recs)
     successes = sum([1 for les_rec in les_recs if les_rec.recording.passed])
     time_sum = sum([les_rec.lesson.rest_millis for les_rec in les_recs])
@@ -100,47 +102,44 @@ def get_lessons_for_user(user_id):
         (user_id, 20)
     )]
     factory = get_lesson_factory(lesrecs)
-    print factory
+    print 'now: %s' % str(factory)
     return get_lesson_set(user_id, factory, 5)
+
+def get_factory_from_lesson(lesson):
+    ret = LessonFactory(
+            max_interval=lesson.max_interval,
+            rest_millis=lesson.rest_millis,
+            length=lesson.length,
+            w=lesson.w,
+            h=lesson.h
+    )
+    #print '%s from %s' % (str(ret), str(lesson))
+    return ret
 
 
 def get_lesson_factory(recent_lesson_recordings):
-    print 'last 3: ' + json.dumps(recent_lesson_recordings[:3])
+    print 'recent: %s' % str(recent_lesson_recordings)
     if not recent_lesson_recordings:
         return get_base_lesson_factory()
-    by_interval = lambda les_rec: les_rec.lesson.max_interval
-    sorted_lesson_recordings = sorted(
-        recent_lesson_recordings,
-        key=by_interval
-    )
-    getintv = lambda les_rec: les_rec.lesson.max_interval
-    stats_by_intv = {}
-    for intv, group in groupby(sorted_lesson_recordings, key=getintv):
-        stats_by_intv[intv] = stats_at_max_interval(list(group))
-    intvs = list(reversed(sorted(stats_by_intv.keys())))
-    intv = intvs[0]
-    stats = stats_by_intv[intv]
+    by_factory = defaultdict(list)
+    latest = get_factory_from_lesson(recent_lesson_recordings[0].lesson)
+    print 'was: %s' % str(latest)
+    for les_rec in recent_lesson_recordings:
+        by_factory[get_factory_from_lesson(les_rec.lesson)].append(les_rec)
+    stats = get_stats(by_factory[latest])
     print stats
-    # TODO make sophisticated
-    same = LessonFactory(
-            max_interval=intv,
-            rest_millis=round(stats['avg_time']),
-            length=round(stats['avg_length']),
-            w=next(reversed(recent_lesson_recordings)).lesson.w,
-            h=next(reversed(recent_lesson_recordings)).lesson.h
-    )
-
     if stats['count'] <= 3:
-        return same
+        return latest
+    #pdb.set_trace()
     if stats['count'] > 3 and stats['success_rate'] == 0:
-        return demote_random(same)
+        return demote_random(latest)
     if stats['count'] > 3 and stats['success_rate'] == 1:
-        return promote_random(same)
+        return promote_random(latest)
     if stats['count'] > 10 and stats['success_rate'] > 0.9:
-        return promote_random(same)
+        return promote_random(latest)
     if stats['count'] > 10 and stats['success_rate'] < 0.4:
-        return demote_random(same)
-    return same
+        return demote_random(latest)
+    return latest
 
 def get_lesson_set(user_id, factory, n):
     return [get_lesson(user_id, factory) for x in range(n)]
@@ -152,8 +151,8 @@ def get_lesson(user_id, factory):
         create_time=int(time.time()),
         note_duration_millis=200,
         rest_millis=factory.rest_millis,
-        wait_time_millis=10000,
-        tolerance=int(math.ceil(factory.length*0.5)),
+        wait_time_millis=25000,
+        tolerance=int(math.floor(factory.length*0.5)),
         w=factory.w,
         h=factory.h,
         base=min(seq),
