@@ -14,7 +14,10 @@
         <script type="text/javascript" src="{{ url_for('static', filename='js/tinycolor.js') }}"></script>
     </head>
     <body>
-        <canvas style="height: 100%; width: 100%;" id="canvas"></canvas>
+        <div id="canvasDiv" style="margin: 0; padding: 0; height: 90%; width: 100%; position: fixed;  top: 0; right: 0; left: 0; background-color: #aaa">
+            <canvas style="height: 100%; width: 100%;" id="canvas"></canvas>
+        </div>
+        <div id="ctrl" style="left: 0; margin: 0; padding: 0; height: 10%; width: 100%; background-color: #aaa; position: fixed; bottom: 0"></div>
     </body>
 </html> 
 

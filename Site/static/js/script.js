@@ -17,7 +17,7 @@ var state = {
     basePitch: 36,
     running: false,
     downHandlers: {},
-    playListen: playListen.PLAYING
+    playListen: playListen.LISTENING
 }
 var ctx;
 var noteToColor = {
@@ -34,6 +34,20 @@ var noteToColor = {
     'A#': '#97014b',
     'B': '#9feeff'
 }
+var noteToSpellings = {
+    'C': 'C',
+    'C#': 'C#/Db',
+    'D': 'D',
+    'D#': 'D#/Eb',
+    'E': 'E',
+    'F': 'F',
+    'F#': 'F#/Gb',
+    'G': 'G',
+    'G#': 'G#/Ab',
+    'A': 'A',
+    'A#': 'A#/Bb',
+    'B': 'B'
+}
 var noteToAltColor;
 
 function buildNoteToAltColor() {
@@ -47,7 +61,7 @@ function buildNoteToAltColor() {
 var notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 var lowC = 0;
 var dim = {
-    x: 7,
+    x: 4,
     y: 5
 }
 
@@ -63,6 +77,8 @@ function getRelativeFromBase(offset) {
 
 function boxW() {
     var ret = Math.floor((globals.canvas.width / dim.x));
+    console.log("boxW is : " + ret);
+    console.log("w is: " + globals.canvas.width);
     return ret;
 }
 
@@ -88,6 +104,10 @@ function getNoteDisplayFromOffset(o) {
     return notes[idx];
 }
 
+function getNoteDisplayFromPitch(p) {
+    return notes[p % notes.length];
+}
+
 var crossColumnInterval = 5;
 
 function coordToNoteOffset(xy) {
@@ -95,10 +115,12 @@ function coordToNoteOffset(xy) {
 }
 
 function getBoundsForCoord(xy) {
-    return {
+    var ret = {
         xy: _xy(xy.x * boxW(), xy.y * boxH()),
         wh: _xy(boxW(), boxH())
     }
+    console.log(ret);
+    return ret;
 }
 
 function toOffset(xy) {
@@ -107,19 +129,32 @@ function toOffset(xy) {
 
 function getBoxFromCoord(xy) {
     var offset = coordToNoteOffset(xy);
-    var noteDisplay = getNoteDisplayFromOffset(offset);
+    var pitch = getPitch(offset);
+    var noteDisplay = getNoteDisplayFromPitch(pitch);
+    var tritone = getNoteDisplayFromPitch(pitch + 6);
     var color = noteToColor[noteDisplay];
+    var textColor = '#' + tinycolor(noteToColor[tritone]).desaturate(20).lighten(20).toHex();
     return {
         xy: xy,
         offset: offset,
         noteDisplay: noteDisplay,
-        note: this.offset + lowC,
+        //note: this.offset + lowC,
         color: color,
         altColor: noteToAltColor[noteDisplay],
+        textColor: textColor,
         bounds: getBoundsForCoord(xy),
         draw: function() {
             ctx.fillStyle = this.color;
             ctx.fillRect(this.bounds.xy.x, this.bounds.xy.y, this.bounds.wh.x, this.bounds.wh.y);
+            ctx.fillStyle = this.textColor;
+            var font = Math.floor(this.bounds.wh.x/10) + 'px sans serif';
+            ctx.font = font;
+            ctx.fillText(
+                noteToSpellings[this.noteDisplay],
+                this.bounds.xy.x + this.bounds.wh.x * 0.025,
+                this.bounds.xy.y + this.bounds.wh.y * 0.9,
+                this.bounds.wh.x
+            );
         },
         drawAlt: function() {
             ctx.fillStyle = this.altColor;
@@ -128,7 +163,7 @@ function getBoxFromCoord(xy) {
         down: function() {
             console.log("down: " + this.offset);
             this.drawAlt();
-            MIDI.noteOn(0, getPitch(this.offset), 127, 0); //for instant start
+            MIDI.noteOn(0, getPitch(this.offset), 127, 0); 
         },
         up: function() {
             console.log("up: " + this.offset);
@@ -150,10 +185,13 @@ function getGrid() {
 }
 
 function xyFromEvent(ev) {
-    return _xy(
-        ev.pageX,// - globals.canvas.offsetLeft,
-        ev.pageY //- globals.canvas.offsetTop
+    console.log(ev);
+    var ret = _xy(
+        ev.pageX - globals.canvas.offsetLeft,
+        ev.pageY - globals.canvas.offsetTop
     );
+    console.log(ret);
+    return ret;
 }
 
 
@@ -210,7 +248,7 @@ function init() {
             window.addEventListener('resize', resize);
             var resizeAndStart = function() {
                 resize();
-                start();
+                //start();
             }
             setTimeout(resizeAndStart,500);
         }
@@ -236,8 +274,6 @@ function indexBoxes(boxList) {
 }
 
 function doDownBoxes(boxes) {
-    console.log('before: ' + JSON.stringify(globals.downBoxes));
-    console.log(grid);
     var index = indexBoxes(boxes);
     for (var b = 0 ; b < boxes.length; b++) {
         var box = boxes[b];
@@ -258,12 +294,13 @@ function doDownBoxes(boxes) {
             delete globals.downBoxes[offset];
         }
     }
-    console.log('after: ' + JSON.stringify(globals.downBoxes));
 }
 
 function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    //canvas.width = window.innerWidth;
+    //canvas.height = window.innerHeight;
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
     ctx = canvas.getContext('2d');
     ctx.fillStyle = '#eee';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
