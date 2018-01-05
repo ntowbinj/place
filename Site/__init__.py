@@ -65,5 +65,7 @@ def hack_json():
     return from_safe_buffer(json.loads(request.form['json']))
 
 def is_mobile():
+    if not request.user_agent or not request.user_agent.platform:
+        return True
     lower = request.user_agent.platform.lower()
     return any((s in lower for s in ['iphone', 'android']))
