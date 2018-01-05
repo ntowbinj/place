@@ -248,7 +248,7 @@ function init() {
             window.addEventListener('resize', resize);
             var resizeAndStart = function() {
                 resize();
-                //start();
+                start();
             }
             setTimeout(resizeAndStart,500);
         }

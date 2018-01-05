@@ -3,6 +3,13 @@
     <head>
         <title>
         </title>
+        <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
+        <link type="text/css" href="{{ url_for('static', filename='reset/style.css') }}" rel="stylesheet">
+        {% if is_mobile %}
+        <link type="text/css" href="{{ url_for('static', filename='css/mobile.css') }}" rel="stylesheet">
+        {% else %}
+        <link type="text/css" href="{{ url_for('static', filename='css/desktop.css') }}" rel="stylesheet">
+        {% endif %}
         {% for f in ['AudioDetect', 'LoadPlugin', 'Plugin', 'Player'] %}
         <script src="{{ url_for('static', filename='js/MIDI.js/js/MIDI/' ~ f ~ '.js') }}"></script>
         {% endfor %}
@@ -14,10 +21,12 @@
         <script type="text/javascript" src="{{ url_for('static', filename='js/tinycolor.js') }}"></script>
     </head>
     <body>
-        <div id="canvasDiv" style="margin: 0; padding: 0; height: 90%; width: 100%; position: fixed;  top: 0; right: 0; left: 0; background-color: #aaa">
+        <div id="canvasDiv">
             <canvas style="height: 100%; width: 100%;" id="canvas"></canvas>
         </div>
-        <div id="ctrl" style="left: 0; margin: 0; padding: 0; height: 10%; width: 100%; background-color: #aaa; position: fixed; bottom: 0"></div>
+        <div id="ctrl" style="">
+            <a id="play" class="btn black startStop">START</button>
+        </div>
     </body>
 </html> 
 

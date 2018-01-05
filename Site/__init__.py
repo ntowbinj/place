@@ -16,13 +16,7 @@ def ensure_user():
 
 @app.route("/")
 def hello():
-    return render_template('template.html')
-
-lessonList = [
-    dict(lesson_key='a', millis=300, noteDuration=200, notes = [58, 60], base=58, time=10000, tolerance=1),
-    dict(lesson_key='b', millis=300, noteDuration=200, notes = [65, 56], base=56, time=10000, tolerance=1),
-    dict(lesson_key='b', millis=300, noteDuration=200, notes = [45, 47], base=45, time=10000, tolerance=1)
-]
+    return render_template('template.html', is_mobile=is_mobile())
 
 def make_safe(lesson):
     return dict(
@@ -69,3 +63,7 @@ def recording():
 
 def hack_json():
     return from_safe_buffer(json.loads(request.form['json']))
+
+def is_mobile():
+    lower = request.user_agent.platform.lower()
+    return any((s in lower for s in ['iphone', 'android']))

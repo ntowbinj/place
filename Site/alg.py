@@ -90,8 +90,8 @@ def get_base_lesson_factory():
         max_interval=4,
         rest_millis=400,
         length=3,
-        w=3,
-        h=6
+        w=4,
+        h=5
     )
 
 
