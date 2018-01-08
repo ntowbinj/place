@@ -12,6 +12,7 @@ lesson_fields = [
     'base',
     'spanning_interval',
     'max_interval',
+    'hint_prefix',
     'length',
     'sequence'
 ]
@@ -31,6 +32,7 @@ UserCreate = namedtuple('UserCreate', user_fields)
 lesson_factory_fields = [
     'max_interval',
     'rest_millis',
+    'hint_prefix',
     'length',
     'w',
     'h'

@@ -90,6 +90,7 @@ def get_base_lesson_factory():
         max_interval=4,
         rest_millis=400,
         length=3,
+        hint_prefix=1,
         w=4,
         h=5
     )
@@ -110,6 +111,7 @@ def get_factory_from_lesson(lesson):
             max_interval=lesson.max_interval,
             rest_millis=lesson.rest_millis,
             length=lesson.length,
+            hint_prefix=lesson.hint_prefix,
             w=lesson.w,
             h=lesson.h
     )
@@ -159,6 +161,7 @@ def get_lesson(user_id, factory):
         spanning_interval=max(seq) - min(seq),
         max_interval = factory.max_interval,
         length=factory.length,
+        hint_prefix=factory.hint_prefix,
         sequence=seq
     )
     lesson_id = data.do_insert('lessons', lesson_create)

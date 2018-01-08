@@ -24,6 +24,7 @@ def make_safe(lesson):
         restMillis=lesson.rest_millis,
         noteDurationMillis=lesson.note_duration_millis,
         sequence=lesson.sequence,
+        hintPrefix=lesson.hint_prefix,
         base=lesson.base,
         w=lesson.w,
         h=lesson.h,
