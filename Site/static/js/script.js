@@ -18,7 +18,8 @@ var state = {
     basePitch: 36,
     running: false,
     downHandlers: {},
-    playListen: playListen.LISTENING
+    playListen: playListen.LISTENING,
+    lessonReqId: -1
 }
 var ctx;
 var noteToColor = {
@@ -141,35 +142,56 @@ function getBoxFromCoord(xy) {
         color: color,
         altColor: noteToAltColor[noteDisplay],
         textColor: textColor,
+        border: false,
         bounds: getBoundsForCoord(xy),
         draw: function() {
-            ctx.fillStyle = this.color;
-            ctx.fillRect(this.bounds.xy.x, this.bounds.xy.y, this.bounds.wh.x, this.bounds.wh.y);
+            this.drawColor(this.color);
+            if (this.border) {
+                this.drawColor("rgba(255, 255, 255, 0.7");
+                this.drawSmall(this.color);
+            } 
             ctx.fillStyle = this.textColor;
             var font = Math.floor(this.bounds.wh.x/6) + 'px sans serif';
             ctx.font = font;
             ctx.fillText(
                 noteToSpellings[this.noteDisplay],
-                this.bounds.xy.x + this.bounds.wh.x * 0.025,
+                this.bounds.xy.x + this.bounds.wh.x * 0.05,
                 this.bounds.xy.y + this.bounds.wh.y * 0.9,
                 this.bounds.wh.x
             );
         },
         drawAlt: function() {
-            ctx.fillStyle = this.altColor;
+            this.drawColor(this.altColor);
+            if (this.border) {
+                this.drawColor("white");
+                this.drawSmall(this.altColor);
+            } 
+        },
+        drawColor: function(color) {
+            ctx.fillStyle = color;
             ctx.fillRect(this.bounds.xy.x, this.bounds.xy.y, this.bounds.wh.x, this.bounds.wh.y);
         },
+        drawSmall: function(color) {
+            ctx.fillStyle = color;
+            var offset = this.bounds.wh.x / 20;
+            ctx.fillRect(
+                this.bounds.xy.x + offset,
+                this.bounds.xy.y + offset,
+                this.bounds.wh.x - 2 * offset,
+                this.bounds.wh.y - 2 * offset
+            );
+        },
         down: function(skipDraw) {
+            noteOn(pitch);
             if (!skipDraw) {
                 this.drawAlt();
             }
             globals.downBoxes[this.offset] = 1;
-            noteOn(pitch);
         },
         up: function() {
+            noteOff(pitch);
             this.draw();
             delete globals.downBoxes[this.offset];
-            noteOff(pitch);
         }
     };
 }
@@ -251,13 +273,31 @@ function init() {
             globals.canvas = canvas;
             noteToAltColor = buildNoteToAltColor();
             window.addEventListener('resize', resize);
-            var resizeAndStart = function() {
-                resize();
-                start();
-            }
-            setTimeout(resizeAndStart,500);
+            resize();
+            setUpCtrl();
         }
     });
+}
+
+function getStartStop() {
+    return document.getElementById('startStop');
+}
+
+function setUpCtrl() {
+    var startStop = getStartStop();
+    var startText = "START"; // storing state in the DOM :D
+    var stopText = "STOP";
+    startStop.onclick = function() {
+        var innerText = startStop.innerText;
+        if (innerText === startText) {
+            start();
+            startStop.innerText = stopText;
+        } else {
+            console.log("stopping");
+            stop();
+            startStop.innerText = startText;
+        }
+    }
 }
 
 function touches(list) {
@@ -324,8 +364,8 @@ function finishBatch() {
     run();
 }
 
-function startBatch(lessonList) {
-    doAllLessons(lessonList, finishBatch);
+function startBatch(result) {
+    doAllLessons(result.lessonList, finishBatch);
 }
 
 function setGrid(lesson) {
@@ -341,14 +381,31 @@ function start() {
 }
 
 function stop() {
+    clearRequest(state.lessonReqId);
+    clear(GROUP);
+    if (state.playListen === playListen.LISTENING) {
+        playState.stops++;
+        // benefit of the doubt you're not stopping to skip one
+        if (playState.stops > 2) { 
+            flushRecordingBuffer();
+        }
+    }
     state.running = false;
     state.playListen = playListen.LISTENING;
     globals.consecutiveEmpties = 0;
+    allNotesOff();
+    draw();
 }
 
 function noteOn(v) {
     MIDI.noteOn(0, v, 127, 0); 
     globals.downPitches[v] = 1;
+}
+
+function allNotesOff() {
+    Object.keys(globals.downPitches).forEach(function(pitch) {
+        noteOff(pitch);
+    });
 }
 
 function noteOff(v) {
@@ -358,7 +415,8 @@ function noteOff(v) {
 
 function downWithHintMaybe(pitch, hint) {
     if (hint) {
-        doDownBoxes([pitchToGrid[pitch]], true);
+        pitchToGrid[pitch].border = true;
+        pitchToGrid[pitch].down();
     } else {
         noteOn(pitch);
     }
@@ -366,7 +424,7 @@ function downWithHintMaybe(pitch, hint) {
 
 function upWithHintMaybe(pitch, hint) {
     if (hint) {
-        doDownBoxes([]);
+        pitchToGrid[pitch].up();
     } else {
         noteOff(pitch);
     }
@@ -446,17 +504,22 @@ function unixtime() {
 }
 
 
-recordingBuffer = {};
+var playState = {
+    recordingStartTime: -1,
+    recordingBuffer: {},
+    stops: 0
+};
+
 function doRecordResponse(lesson, finishRecording) {
     listening();
     var recording = {};
-    var baseTime = unixtime();
+    playState.recordingStartTime = unixtime();
     recording['notes'] = [];
     recording['noteTimes'] = [];
     var finalize = function(isDoneResult) {
         delete state.downHandlers[DOWN_HANDLER];
         recording['passed'] = isDoneResult.success;
-        recordingBuffer[lesson.lessonKey] = recording;
+        playState.recordingBuffer[lesson.lessonKey] = recording;
         if (recording.notes.length === 0) {
             globals.consecutiveEmpties++;
             if (globals.consecutiveEmpties > 1) {
@@ -466,9 +529,7 @@ function doRecordResponse(lesson, finishRecording) {
             globals.consecutiveEmpties = 0;
 
         }
-
-        flushRecordingBuffer(recordingBuffer);
-        recordingBuffer = {};
+        flushRecordingBuffer();
         timeout(
             GROUP,
             finishRecording,
@@ -477,7 +538,7 @@ function doRecordResponse(lesson, finishRecording) {
     };
     var downHandler = function(offset) {
         recording.notes.push(getPitch(offset));
-        recording.noteTimes.push(unixtime() - baseTime);
+        recording.noteTimes.push(unixtime() - playState.recordingStartTime);
         var isDoneResult = isDone(recording, lesson);
         if (isDoneResult.isDone) {
             clear(GROUP);
@@ -492,8 +553,12 @@ function doRecordResponse(lesson, finishRecording) {
     )
 }
 
-function flushRecordingBuffer(recordingBuffer) {
-    postJson("/recording", recordingBuffer);
+function flushRecordingBuffer() {
+    if ($.isEmptyObject(playState.recordingBuffer)) {
+        return;
+    }
+    postJson("/recording", playState.recordingBuffer);
+    playState.recordingBuffer = {};
 }
 
 function doLesson(lesson, next) {
@@ -528,42 +593,31 @@ function doAllLessonsResume(lessonList, index, finish) {
     );
 }
 
+var requests = {};
+var reqCount = 0;
+function getCancelably(path, data, callback) {
+    var reqId = reqCount++;
+    requests[reqId] = 1;
+    $.get(path, data, function(result) {
+        if (reqId in requests) {
+            callback(result);
+        } else {
+            console.log("ignoring request " + reqId);
+        }
+        delete requests[reqId];
+    });
+    return reqId;
+}
 
-lessonBuffer = [];
+function clearRequest(reqId) {
+    delete requests[reqId];
+}
 
 function run() {
     if (!state.running) {
         return;
     }
-    if (lessonBuffer.length == 0) {
-        $.get(
-                "/lessons", {}, function(result) {
-                    prependToBuffer(result.lessonList);
-                    dequeueFromBuffer();
-                }
-        );
-    } else if (lessonBuffer.length <= 5) {
-        $.get(
-                "/lessons", {}, function(result) {
-                    prependToBuffer(result.lessonList);
-                }
-        );
-        dequeueFromBuffer();
-    } else {
-        dequeueFromBuffer();
-    }
-}
-
-function prependToBuffer(lessonList) {
-    lessonBuffer = lessonList.concat(lessonBuffer);
-}
-
-function dequeueFromBuffer() {
-    singleton = [lessonBuffer[lessonBuffer.length - 1]];
-    lessonBuffer = lessonBuffer.slice(0, lessonBuffer.length - 1);
-    console.log(lessonBuffer.map(function(l) { return l.lessonKey }));
-    console.log(lessonBuffer.map(function(l) { return l.sequence.length }));
-    startBatch(singleton);
+    state.lessonReqId = getCancelably("/lessons", {}, startBatch);
 }
 
 function postJson(path, data, success) {

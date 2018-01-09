@@ -88,7 +88,7 @@ def get_stats(les_recs):
 def get_base_lesson_factory():
     return LessonFactory(
         max_interval=4,
-        rest_millis=400,
+        rest_millis=0,
         length=3,
         hint_prefix=1,
         w=4,
@@ -147,17 +147,18 @@ def get_lesson_set(user_id, factory, n):
     return [get_lesson(user_id, factory) for x in range(n)]
 
 def get_lesson(user_id, factory):
-    seq = get_lesson_sequence(factory)
+    base = random.randint(50, 70)
+    seq = get_lesson_sequence(base, factory)
     lesson_create = LessonCreate(
         user_id=user_id,
         create_time=int(time.time()),
-        note_duration_millis=200,
+        note_duration_millis=250,
         rest_millis=factory.rest_millis,
         wait_time_millis=25000,
         tolerance=int(math.floor(factory.length*0.5)),
         w=factory.w,
         h=factory.h,
-        base=min(seq),
+        base=base,
         spanning_interval=max(seq) - min(seq),
         max_interval = factory.max_interval,
         length=factory.length,
@@ -168,7 +169,7 @@ def get_lesson(user_id, factory):
     return Lesson(lesson_id, **lesson_create._asdict())
 
 
-def get_lesson_sequence(factory):
+def get_lesson_sequence(base, factory):
     capacity = factory.w * factory.h;
     seq = [0]
     while len(seq) < factory.length:
@@ -185,8 +186,9 @@ def get_lesson_sequence(factory):
             seq = candidate
     bottom = min(seq)
     relative = [n - bottom for n in seq]
-    base = random.randint(50, 70)
-    return [n + base for n in seq]
+    slack = capacity - (max(seq) - min(seq))
+    seq_base_offset = random.randint(0, slack - 1) # randint is inclusive range :(
+    return [n + base + seq_base_offset for n in relative]
 
 
     
