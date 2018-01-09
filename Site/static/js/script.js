@@ -11,7 +11,8 @@ var playListen = {
     LISTENING: 1
 }
 
-var GROUP = 123;
+var PLAYING_GROUP = 123;
+var TIMER_GROUP = 456;
 
 var state = {
     timeouts: {},
@@ -382,7 +383,7 @@ function start() {
 
 function stop() {
     clearRequest(state.lessonReqId);
-    clear(GROUP);
+    clear(PLAYING_GROUP);
     if (state.playListen === playListen.LISTENING) {
         playState.stops++;
         // benefit of the doubt you're not stopping to skip one
@@ -402,15 +403,15 @@ function noteOn(v) {
     globals.downPitches[v] = 1;
 }
 
+function noteOff(v) {
+    MIDI.noteOff(0, v, 0); 
+    delete globals.downPitches[v];
+}
+
 function allNotesOff() {
     Object.keys(globals.downPitches).forEach(function(pitch) {
         noteOff(pitch);
     });
-}
-
-function noteOff(v) {
-    MIDI.noteOff(0, v, 0); 
-    delete globals.downPitches[v];
 }
 
 function downWithHintMaybe(pitch, hint) {
@@ -438,10 +439,10 @@ function doPlayLessonResume(lesson, index, next) {
     var pitch = lesson.sequence[index];
     var isHint = index < lesson.hintPrefix; 
     downWithHintMaybe(pitch, isHint);
-    timeout(GROUP, function() {
+    timeout(PLAYING_GROUP, function() {
         //noteOff(pitch);
         upWithHintMaybe(pitch, isHint);
-        timeout(GROUP,
+        timeout(PLAYING_GROUP,
             function() { doPlayLessonResume(lesson, index + 1, next); },
             lesson.restMillis
         );
@@ -510,6 +511,10 @@ var playState = {
     stops: 0
 };
 
+function setTimer(waitMillis) {
+
+}
+
 function doRecordResponse(lesson, finishRecording) {
     listening();
     var recording = {};
@@ -531,7 +536,7 @@ function doRecordResponse(lesson, finishRecording) {
         }
         flushRecordingBuffer();
         timeout(
-            GROUP,
+            PLAYING_GROUP,
             finishRecording,
             isDoneResult.wait
         );
@@ -541,13 +546,13 @@ function doRecordResponse(lesson, finishRecording) {
         recording.noteTimes.push(unixtime() - playState.recordingStartTime);
         var isDoneResult = isDone(recording, lesson);
         if (isDoneResult.isDone) {
-            clear(GROUP);
+            clear(PLAYING_GROUP);
             finalize(isDoneResult);
         }
     }
     state.downHandlers[DOWN_HANDLER] = downHandler;
     timeout(
-        GROUP,
+        PLAYING_GROUP,
         function() { finalize(isDone(recording, lesson)); },
         lesson.waitTimeMillis
     )
@@ -573,7 +578,7 @@ function doLesson(lesson, next) {
             }
         );
     }
-    timeout(GROUP, startLesson, 500);
+    timeout(PLAYING_GROUP, startLesson, 500);
 }
 
 function doAllLessons(lessonList, finish) {

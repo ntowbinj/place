@@ -24,6 +24,7 @@ body {
 }
 
 .buttn {
+    float: left;
     position: relative;
     margin: 20px 20px 20px 20px;
     display: inline-block;
@@ -39,4 +40,11 @@ body {
     box-sizing: border-box;
     font-size: 50px;
     font-family: 'Roboto Mono', monospace;
+}
+
+#timer {
+    position: relative;
+    float: left;
+    margin: 55px 20px 40px 70px;
+    font-size: 50px;
 }

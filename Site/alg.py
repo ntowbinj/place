@@ -9,6 +9,8 @@ from collections import defaultdict
 from classes import LessonFactory, Lesson, LessonCreate, Recording, LessonRecording
 from itertools import groupby
 
+FOURTH = 5
+
 def demote_random(lesson_factory):
     print 'demoting'
     demotions = [demote_rest_millis]
@@ -16,6 +18,8 @@ def demote_random(lesson_factory):
         demotions.append(demote_interval)
     if lesson_factory.length > 2:
         demotions.append(demote_length)
+    if lesson_factory.w * FOURTH > lesson_factory.max_interval + 2:
+        demotions.append(demote_width)
     rand = int(time.time()) % len(demotions)
     return demotions[rand](lesson_factory)
 
@@ -27,6 +31,10 @@ def promote_random(lesson_factory):
         promote_length
 
     ]
+    if lesson_factory.w < 3:
+        return promote_width(lesson_factory)
+    if lesson_factory.w < 4:
+        promotions.append(promote_width)
     rand = int(time.time()) % len(promotions)
     return promotions[rand](lesson_factory)
 
@@ -41,13 +49,21 @@ def demote_interval(lesson_factory):
     return change_interval(lesson_factory, -1)
 
 def promote_interval(lesson_factory):
-    return change_interval(lesson_factory, 1)
+    promoted = change_interval(lesson_factory, 1)
+    if promoted.max_interval > lesson_factory.w * FOURTH:
+        return promote_width(promoted)
 
 def demote_length(lesson_factory):
     return change_length(lesson_factory, -1)
 
 def promote_length(lesson_factory):
     return change_length(lesson_factory, 1)
+
+def demote_width(lesson_factory):
+    return change_width(lesson_factory, -1)
+
+def promote_width(lesson_factory):
+    return change_width(lesson_factory, 1)
 
 def scale_res_millis(lesson_factory, factor):
     as_dict = lesson_factory._asdict()
@@ -66,6 +82,13 @@ def change_interval(lesson_factory, change):
 def change_length(lesson_factory, change):
     as_dict = lesson_factory._asdict()
     as_dict['length'] = change + lesson_factory.length
+    return LessonFactory(
+        **as_dict
+    )
+
+def change_width(lesson_factory, change):
+    as_dict = lesson_factory._asdict()
+    as_dict['w'] = change + lesson_factory.w
     return LessonFactory(
         **as_dict
     )
@@ -89,9 +112,9 @@ def get_base_lesson_factory():
     return LessonFactory(
         max_interval=4,
         rest_millis=0,
-        length=3,
+        length=2,
         hint_prefix=1,
-        w=4,
+        w=1,
         h=5
     )
 
