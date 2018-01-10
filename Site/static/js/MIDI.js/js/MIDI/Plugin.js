@@ -192,7 +192,9 @@ if (window.AudioContext || window.webkitAudioContext) (function () {
 		}
 		var value = (velocity / 127) * (masterVolume / 127) * 2 - 1;
 		source.gainNode.connect(ctx.destination);
-		source.gainNode.gain.value = Math.max(-1, value);
+		//source.gainNode.gain.value = Math.max(-1, value);
+                //
+                //source.setTargetAtTime(Math.max(-1, value), ctx.currentTime, 15);
 		source.connect(source.gainNode);
 		if (source.noteOn) { // old api
 			source.noteOn(delay || 0);

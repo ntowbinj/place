@@ -6,9 +6,15 @@ var globals = {
     consecutiveEmpties: 0
 };
 
+var colors = {
+    LISTEN: '#f55',
+    PLAY: '#5f5'
+};
+
 var playListen = {
     PLAYING: 0,
-    LISTENING: 1
+    LISTENING: 1,
+    IDLE: 2
 }
 
 var PLAYING_GROUP = 123;
@@ -19,7 +25,7 @@ var state = {
     basePitch: 36,
     running: false,
     downHandlers: {},
-    playListen: playListen.LISTENING,
+    playListen: playListen.PLAYING,
     lessonReqId: -1
 }
 var ctx;
@@ -52,6 +58,10 @@ var noteToSpellings = {
     'B': 'B'
 }
 var noteToAltColor;
+
+function byId(id) {
+    return document.getElementById(id);
+}
 
 function buildNoteToAltColor() {
     ret = {};
@@ -230,9 +240,7 @@ function init() {
         soundfontUrl: "/static/js/MIDI.js/soundfont/",
         callback: function() {
             MIDI.loader.stop();	
-            MIDI.noteOn(0, 0, 0, 0); //for instant start
-            MIDI.noteOff(0, 0, 100);
-            canvas = document.getElementById('canvas');
+            canvas = byId('canvas');
             var handler = function(ev) {
                 var list = [resolve(xyFromEvent(ev))];
                 touches(list);
@@ -281,14 +289,20 @@ function init() {
 }
 
 function getStartStop() {
-    return document.getElementById('startStop');
+    return byId('startStop');
 }
 
+var superIrritatingHack = false;
 function setUpCtrl() {
     var startStop = getStartStop();
     var startText = "START"; // storing state in the DOM :D
     var stopText = "STOP";
     startStop.onclick = function() {
+        if (!superIrritatingHack) {
+            superIrritatingHack = true;
+            MIDI.noteOn(0, 25, 10, 0); 
+            MIDI.noteOff(0, 25, 0); 
+        }
         var innerText = startStop.innerText;
         if (innerText === startText) {
             start();
@@ -313,6 +327,10 @@ function touches(list) {
     doDownBoxes(boxes);
 }
 
+function clearDownHandlers() {
+    state.downHandlers = {};
+}
+
 function indexBoxes(boxList) {
     var index = {};
     for (var b = 0; b < boxList.length; b++) {
@@ -327,7 +345,7 @@ function doDownBoxes(boxes, force) {
     for (var b = 0 ; b < boxes.length; b++) {
         var box = boxes[b];
         if (!(box.offset in globals.downBoxes)) {
-            if ((state.playListen == playListen.LISTENING) || force) {
+            if ((state.playListen == playListen.PLAYING) || force) {
                 box.down();
             }
             for (var k in state.downHandlers) {
@@ -349,7 +367,7 @@ function resize() {
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
     ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#eee';
+    ctx.fillStyle = '#666';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     draw();
 }
@@ -383,8 +401,11 @@ function start() {
 
 function stop() {
     clearRequest(state.lessonReqId);
+    clearDownHandlers();
     clear(PLAYING_GROUP);
-    if (state.playListen === playListen.LISTENING) {
+    playState.finalize();
+    globals.consecutiveEmpties = 0;
+    if (state.playListen === playListen.PLAYING) {
         playState.stops++;
         // benefit of the doubt you're not stopping to skip one
         if (playState.stops > 2) { 
@@ -392,7 +413,7 @@ function stop() {
         }
     }
     state.running = false;
-    state.playListen = playListen.LISTENING;
+    idle();
     globals.consecutiveEmpties = 0;
     allNotesOff();
     draw();
@@ -493,11 +514,23 @@ function isDone(recording, lesson) {
 }
 
 function listening() {
+    var instruction = $('#instruction');
+    instruction.text('LISTEN');
+    instruction.css({'color': colors.LISTEN});
     state.playListen = playListen.LISTENING;
 }
 
 function playing() {
+    var instruction = $('#instruction');
+    instruction.text('PLAY IT BACK');
+    instruction.css({'color': colors.PLAY});
     state.playListen = playListen.PLAYING;
+}
+
+function idle() {
+    var instruction = $('#instruction');
+    instruction.text('');
+    state.playListen = playListen.IDLE;
 }
 
 function unixtime() {
@@ -508,7 +541,8 @@ function unixtime() {
 var playState = {
     recordingStartTime: -1,
     recordingBuffer: {},
-    stops: 0
+    stops: 0,
+    finalize: function() {}
 };
 
 function setTimer(waitMillis) {
@@ -516,12 +550,13 @@ function setTimer(waitMillis) {
 }
 
 function doRecordResponse(lesson, finishRecording) {
-    listening();
+    playing();
     var recording = {};
     playState.recordingStartTime = unixtime();
     recording['notes'] = [];
     recording['noteTimes'] = [];
-    var finalize = function(isDoneResult) {
+    playState.finalize = function(isDoneResult) {
+        var isDoneResult = isDone(recording, lesson);
         delete state.downHandlers[DOWN_HANDLER];
         recording['passed'] = isDoneResult.success;
         playState.recordingBuffer[lesson.lessonKey] = recording;
@@ -535,6 +570,10 @@ function doRecordResponse(lesson, finishRecording) {
 
         }
         flushRecordingBuffer();
+        playState.finalize = function() {}; // ew
+    };
+    var finalizeAndContinue = function() {
+        playState.finalize();
         timeout(
             PLAYING_GROUP,
             finishRecording,
@@ -547,13 +586,13 @@ function doRecordResponse(lesson, finishRecording) {
         var isDoneResult = isDone(recording, lesson);
         if (isDoneResult.isDone) {
             clear(PLAYING_GROUP);
-            finalize(isDoneResult);
+            playState.finalize();
         }
     }
     state.downHandlers[DOWN_HANDLER] = downHandler;
     timeout(
         PLAYING_GROUP,
-        function() { finalize(isDone(recording, lesson)); },
+        function() { playState.finalize(); },
         lesson.waitTimeMillis
     )
 }
@@ -567,7 +606,7 @@ function flushRecordingBuffer() {
 }
 
 function doLesson(lesson, next) {
-    playing();
+    listening();
     setGrid(lesson);
     var startLesson = function() {
         doPlayLessonResume(

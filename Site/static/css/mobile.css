@@ -1,5 +1,6 @@
 body {
-    background-color: #bbb;
+    background-color: #666;
+    font-family: 'Roboto Mono', monospace;
 }
 
 #canvasDiv {
@@ -26,12 +27,12 @@ body {
 .buttn {
     float: left;
     position: relative;
-    margin: 20px 20px 20px 20px;
+    margin: 20px 10px 20px 20px;
     display: inline-block;
     height: 160px;
     width: 200px;
     border-radius: 2px;
-    background-color: #444;
+    background-color: #111;
     color: white;
     text-align: center;
     display: inline-block;
@@ -39,12 +40,12 @@ body {
     padding-bottom: 5px;
     box-sizing: border-box;
     font-size: 50px;
-    font-family: 'Roboto Mono', monospace;
 }
 
-#timer {
+#instruction {
     position: relative;
     float: left;
-    margin: 55px 20px 40px 70px;
+    margin: 55px 20px 40px 30px;
     font-size: 50px;
+    font-weight: bold;
 }

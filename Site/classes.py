@@ -4,7 +4,6 @@ lesson_fields = [
     'user_id',
     'create_time',
     'note_duration_millis',
-    'rest_millis',
     'wait_time_millis',
     'tolerance',
     'w',
@@ -31,7 +30,7 @@ UserCreate = namedtuple('UserCreate', user_fields)
 
 lesson_factory_fields = [
     'max_interval',
-    'rest_millis',
+    'note_duration_millis',
     'hint_prefix',
     'length',
     'w',
