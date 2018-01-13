@@ -49,3 +49,11 @@ body {
     font-size: 50px;
     font-weight: bold;
 }
+
+#timer {
+    position: relative;
+    float: left;
+    margin: 55px 20px 40px 30px;
+    font-size: 50px;
+    font-weight: bold;
+}

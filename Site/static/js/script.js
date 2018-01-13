@@ -7,14 +7,16 @@ var globals = {
 };
 
 var colors = {
-    LISTEN: '#f55',
-    PLAY: '#5f5'
+    LISTEN: '#f77',
+    PLAY: '#7f7',
+    INCORRECT: '#ff0'
 };
 
 var playListen = {
     PLAYING: 0,
     LISTENING: 1,
-    IDLE: 2
+    IDLE: 2,
+    BETWEEN: 3
 }
 
 var PLAYING_GROUP = 123;
@@ -340,16 +342,20 @@ function indexBoxes(boxList) {
     return index;
 }
 
-function doDownBoxes(boxes, force) {
+function canUserPlayNotes() {
+    return (state.playListen != playListen.LISTENING && state.playListen != playListen.BETWEEN);
+}
+
+function doDownBoxes(boxes) {
     var index = indexBoxes(boxes);
-    for (var b = 0 ; b < boxes.length; b++) {
-        var box = boxes[b];
-        if (!(box.offset in globals.downBoxes)) {
-            if ((state.playListen == playListen.PLAYING) || force) {
+    if (canUserPlayNotes()) {
+        for (var b = 0 ; b < boxes.length; b++) {
+            var box = boxes[b];
+            if (!(box.offset in globals.downBoxes)) {
                 box.down();
-            }
-            for (var k in state.downHandlers) {
-                state.downHandlers[k](box.offset);
+                for (var k in state.downHandlers) {
+                    state.downHandlers[k](box.offset);
+                }
             }
         }
     }
@@ -403,14 +409,9 @@ function stop() {
     clearRequest(state.lessonReqId);
     clearDownHandlers();
     clear(PLAYING_GROUP);
-    playState.finalize();
-    globals.consecutiveEmpties = 0;
+    playState.interrupt();
     if (state.playListen === playListen.PLAYING) {
         playState.stops++;
-        // benefit of the doubt you're not stopping to skip one
-        if (playState.stops > 2) { 
-            flushRecordingBuffer();
-        }
     }
     state.running = false;
     idle();
@@ -505,12 +506,16 @@ function isSubSequence(containee, container) {
 
 function isDone(recording, lesson) {
     var doneLength = lesson.sequence.length + lesson.tolerance;
+    var success = isSubSequence(lesson.sequence, recording.notes);
+    var wait = success ? globals.DONE_WAIT_SUCCESS : globals.DONE_WAIT_FAIL;
+    var notTooLong = {isDone: success, wait: wait, success: success};
+    if (success) {
+        return notTooLong;
+    }
     if (recording.notes.length > doneLength) {
         return {isDone: true, wait: globals.DONE_WAIT_FAIL, success: false};
     }
-    var success = isSubSequence(lesson.sequence, recording.notes);
-    var wait = success ? globals.DONE_WAIT_SUCCESS : globals.DONE_WAIT_BAD;
-    return {isDone: success, wait: wait, success: success};
+    return notTooLong;
 }
 
 function listening() {
@@ -527,10 +532,29 @@ function playing() {
     state.playListen = playListen.PLAYING;
 }
 
+function correct() {
+    var instruction = $('#instruction');
+    instruction.text('CORRECT');
+    instruction.css({'color': colors.PLAY});
+}
+
+function incorrect() {
+    var instruction = $('#instruction');
+    instruction.text('INCORRECT');
+    instruction.css({'color': colors.INCORRECT});
+}
+
+
 function idle() {
     var instruction = $('#instruction');
     instruction.text('');
     state.playListen = playListen.IDLE;
+}
+
+function between() {
+    var instruction = $('#instruction');
+    instruction.text('');
+    state.playListen = playListen.BETWEEN;
 }
 
 function unixtime() {
@@ -542,38 +566,87 @@ var playState = {
     recordingStartTime: -1,
     recordingBuffer: {},
     stops: 0,
-    finalize: function() {}
+    interrupt: function() {}
 };
 
-function setTimer(waitMillis) {
 
+var onces = {};
+var oncesCounter = 0;
+function once(f) {
+    var id = oncesCounter++;
+    onces[id] = 1; 
+    return function() {
+        if (id in onces) {
+            delete onces[id];
+            return f.apply(null, arguments);
+        } else {
+            console.log('already did once: ' + id);
+        }
+    };
 }
+
+var timer = {
+    start: function (waitMillis) {
+        var start = unixtime();
+        var setter = function() {
+            var el = $("#timer"); 
+            el.css({'color': colors.PLAY});
+            el.text(
+                Math.ceil((waitMillis - (unixtime() - start))/1000)
+            );
+            timeout(
+                TIMER_GROUP,
+                setter,
+                300
+            );
+        };
+        setter();
+    },
+    clear: function () {
+        var el = $("#timer"); 
+        el.text('');
+        clear(TIMER_GROUP);
+    }
+};
 
 function doRecordResponse(lesson, finishRecording) {
     playing();
+    timer.start(lesson.waitTimeMillis);
     var recording = {};
     playState.recordingStartTime = unixtime();
     recording['notes'] = [];
     recording['noteTimes'] = [];
-    playState.finalize = function(isDoneResult) {
-        var isDoneResult = isDone(recording, lesson);
+    var finalize = once(function(isDoneResult, ignoreRecording) {
         delete state.downHandlers[DOWN_HANDLER];
+        between();
+        timer.clear();
         recording['passed'] = isDoneResult.success;
-        playState.recordingBuffer[lesson.lessonKey] = recording;
+        if (!ignoreRecording) {
+            playState.recordingBuffer[lesson.lessonKey] = recording;
+        }
+        flushRecordingBuffer();
+    });
+    playState.interrupt = function() {
+        var ignore = playState.stops <= 2;
+        finalize(isDone(recording, lesson), ignore);
+    }
+    var finalizeAndContinue = function() {
+        var isDoneResult = isDone(recording, lesson);
+        finalize(isDoneResult);
+        if (isDoneResult.success) {
+            correct();
+        } else {
+            incorrect();
+        }
         if (recording.notes.length === 0) {
             globals.consecutiveEmpties++;
             if (globals.consecutiveEmpties > 1) {
                 stop();
+                return;
             }
         } else {
             globals.consecutiveEmpties = 0;
-
         }
-        flushRecordingBuffer();
-        playState.finalize = function() {}; // ew
-    };
-    var finalizeAndContinue = function() {
-        playState.finalize();
         timeout(
             PLAYING_GROUP,
             finishRecording,
@@ -586,13 +659,13 @@ function doRecordResponse(lesson, finishRecording) {
         var isDoneResult = isDone(recording, lesson);
         if (isDoneResult.isDone) {
             clear(PLAYING_GROUP);
-            playState.finalize();
+            finalizeAndContinue();
         }
     }
     state.downHandlers[DOWN_HANDLER] = downHandler;
     timeout(
         PLAYING_GROUP,
-        function() { playState.finalize(); },
+        finalizeAndContinue,
         lesson.waitTimeMillis
     )
 }
