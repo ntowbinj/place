@@ -2,8 +2,16 @@ import MySQLdb
 from MySQLdb.cursors import DictCursor
 import json
 
-conn = MySQLdb.connect(db='hearit', user='root', passwd='rewt', host='localhost')
-cursor = conn.cursor(DictCursor)
+
+def get_cursor():
+    global conn
+    conn = MySQLdb.connect(db='hearit', user='root', passwd='rewt', host='localhost')
+    return conn.cursor(DictCursor)
+
+def close():
+    global conn
+    conn.close()
+
 
 
 def get_insert(table, fields):
@@ -24,6 +32,7 @@ def get_alias(table, field):
 
 def do_select(table_classes, from_where, args):
     sql = get_select_clause(table_classes) + from_where
+    cursor = get_cursor();
     cursor.execute(sql, args)
     rows = cursor.fetchall()
     ret = []
@@ -33,6 +42,7 @@ def do_select(table_classes, from_where, args):
             asdict = {field: row[get_alias(table, field)] for field in clas._fields}
             row_dict[clas.__name__.lower()] = clas(**asdict)
         ret.append(row_dict)
+    close();
     return ret
 
 
@@ -41,9 +51,12 @@ def do_insert(table, obj):
     sql = get_insert(table, obj._fields)
     values = tuple(obj)
     values = tuple([serialize(v) for v in values])
+    cursor = get_cursor();
     cursor.execute(sql, values)
     conn.commit()
-    return cursor.lastrowid
+    ret = cursor.lastrowid
+    close()
+    return ret
 
 def serialize(v):
     if type(v) is list:

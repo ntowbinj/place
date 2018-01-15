@@ -68,7 +68,7 @@ function byId(id) {
 function buildNoteToAltColor() {
     ret = {};
     for (var n in noteToColor) {
-        ret[n] = '#' + tinycolor(noteToColor[n]).desaturate(20).lighten(3).brighten(15).toHex();
+        ret[n] = '#' + tinycolor(noteToColor[n]).desaturate(20).lighten(7).brighten(15).toHex();
     };
     return ret;
 }
@@ -145,6 +145,8 @@ function getBoxFromCoord(xy) {
     var noteDisplay = getNoteDisplayFromPitch(pitch);
     var tritone = getNoteDisplayFromPitch(pitch + 6);
     var color = noteToColor[noteDisplay];
+    var dark = tinycolor(color).desaturate(20).darken(10);
+    var light = tinycolor(color).brighten(20);
     var textColor = '#' + tinycolor(noteToColor[tritone]).desaturate(20).lighten(20).toHex();
     return {
         xy: xy,
@@ -158,35 +160,36 @@ function getBoxFromCoord(xy) {
         border: false,
         bounds: getBoundsForCoord(xy),
         draw: function() {
-            this.drawColor(this.color);
+            this.drawColor("black");
             if (this.border) {
-                this.drawColor("rgba(255, 255, 255, 0.7");
-                this.drawSmall(this.color);
-            } 
+                this.drawSmall(light, 55);
+            } else {
+                this.drawSmall(dark, 55);
+            }
+            this.drawSmall(this.color, 10);
             ctx.fillStyle = this.textColor;
             var font = Math.floor(this.bounds.wh.x/6) + 'px sans serif';
             ctx.font = font;
             ctx.fillText(
                 noteToSpellings[this.noteDisplay],
-                this.bounds.xy.x + this.bounds.wh.x * 0.05,
-                this.bounds.xy.y + this.bounds.wh.y * 0.9,
+                this.bounds.xy.x + this.bounds.wh.x * 0.15,
+                this.bounds.xy.y + this.bounds.wh.y * 0.85,
                 this.bounds.wh.x
             );
         },
         drawAlt: function() {
-            this.drawColor(this.altColor);
             if (this.border) {
-                this.drawColor("white");
-                this.drawSmall(this.altColor);
+                this.drawColor(light);
             } 
+            this.drawSmall(this.altColor, 30);
         },
         drawColor: function(color) {
             ctx.fillStyle = color;
             ctx.fillRect(this.bounds.xy.x, this.bounds.xy.y, this.bounds.wh.x, this.bounds.wh.y);
         },
-        drawSmall: function(color) {
+        drawSmall: function(color, smallness) {
             ctx.fillStyle = color;
-            var offset = this.bounds.wh.x / 20;
+            var offset = this.bounds.wh.x / smallness;
             ctx.fillRect(
                 this.bounds.xy.x + offset,
                 this.bounds.xy.y + offset,
@@ -406,13 +409,13 @@ function start() {
 }
 
 function stop() {
+    if (state.playListen === playListen.PLAYING) {
+        playState.stops++;
+    }
     clearRequest(state.lessonReqId);
     clearDownHandlers();
     clear(PLAYING_GROUP);
     playState.interrupt();
-    if (state.playListen === playListen.PLAYING) {
-        playState.stops++;
-    }
     state.running = false;
     idle();
     globals.consecutiveEmpties = 0;
@@ -623,7 +626,7 @@ function doRecordResponse(lesson, finishRecording) {
         recording['passed'] = isDoneResult.success;
         if (!ignoreRecording) {
             playState.recordingBuffer[lesson.lessonKey] = recording;
-        }
+        } 
         flushRecordingBuffer();
     });
     playState.interrupt = function() {
