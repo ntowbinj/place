@@ -1,0 +1,76 @@
+body {
+    background-color: #888;
+    font-family: 'Roboto Mono', monospace;
+}
+
+#canvasDiv {
+    margin: 0;
+    padding: 0;
+    bottom: 200px;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+}
+
+#ctrlWrapper {
+    left: 0;
+    margin: 0;
+    padding: 0;
+    height: 200px;
+    width: 100%;
+    position: fixed;
+    bottom: 0;
+}
+
+#ctrl {
+    left: 0;
+    margin: 0;
+    padding: 0;
+    bottom: 0;
+    padding: 13px 10px 13px 20px;
+}
+
+.buttn {
+    float: left;
+    position: relative;
+    height: 119px;
+    width: 200px;
+    border-radius: 2px;
+    background-color: #333;
+    color: white;
+    text-align: center;
+    display: inline-block;
+    padding-top: 45px;
+    padding-bottom: 5px;
+    font-size: 50px;
+}
+
+#status {
+    margin-left: 30px;
+    padding: 20px;
+    float: left;
+    width: 400px;
+    height: 129px;
+    background-color: black;
+    //text-align: center;
+    font-family: monospace;
+    font-size: 47px;
+    font-weight: lighter;
+    color: #8f8;
+    text-shadow: -3px 1px green, 1px 3px green, 3px 1px green, 1px -3px green;
+    border-radius: 10px;
+}
+
+#instruction {
+    padding-top: 20px;
+}
+
+#timer {
+    padding-top: 30px;
+    font-size: 50px;
+}
+
+
+

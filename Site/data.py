@@ -1,3 +1,4 @@
+import config
 import MySQLdb
 from MySQLdb.cursors import DictCursor
 import json
@@ -5,7 +6,7 @@ import json
 
 def get_cursor():
     global conn
-    conn = MySQLdb.connect(db='hearit', user='root', passwd='rewt', host='localhost')
+    conn = MySQLdb.connect(db='hearit', user='root', passwd=config.mysql_pass, host='localhost')
     return conn.cursor(DictCursor)
 
 def close():
