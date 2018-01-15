@@ -156,6 +156,7 @@ function getBoxFromCoord(xy) {
     var isDark = noteToColors[noteDisplay].isDark;
     var slightlyDark = noteToColors[noteDisplay].slightlyDark;
     var dark = noteToColors[noteDisplay].dark;
+    var altColor = noteToColors[noteDisplay].altColor;
     var veryDark = noteToColors[noteDisplay].veryDark; 
     var light = noteToColors[noteDisplay].light;
     var textColor = '#' + tinycolor(noteToColor[tritone]).desaturate(20).lighten(20).toHex();
@@ -166,7 +167,6 @@ function getBoxFromCoord(xy) {
         pitch: pitch,
         //note: this.offset + lowC,
         color: noteToColors[noteDisplay].color,
-        altColor: noteToColors[noteDisplay],
         textColor: textColor,
         border: false,
         bounds: getBoundsForCoord(xy),
@@ -192,7 +192,7 @@ function getBoxFromCoord(xy) {
         },
         drawAlt: function() {
             this.drawColor(light);
-            this.drawSmall(this.altColor, 20);
+            this.drawSmall(altColor, 20);
         },
         drawColor: function(color) {
             ctx.fillStyle = color;
