@@ -59,16 +59,25 @@ var noteToSpellings = {
     'A#': 'A#/Bb',
     'B': 'B'
 }
-var noteToAltColor;
+var noteToColors;
 
 function byId(id) {
     return document.getElementById(id);
 }
 
-function buildNoteToAltColor() {
+function buildNoteToColors() {
     ret = {};
     for (var n in noteToColor) {
-        ret[n] = '#' + tinycolor(noteToColor[n]).brighten(20).toHex();
+        ret[n] = {};
+        var color = noteToColor[n];
+        ret[n].color = color;
+        ret[n].altColor = '#' + tinycolor(noteToColor[n]).brighten(20).toHex();
+        var isDark = tinycolor(color).isDark();
+        ret[n].isDark = isDark;
+        ret[n].slightlyDark = '#' + isDark ? color : tinycolor(color).darken(5).toHex();
+        ret[n].dark = '#' + tinycolor(color).desaturate(20).darken(isDark ? 10 : 20).toHex();
+        ret[n].veryDark = '#' + tinycolor(color).desaturate(20).darken(40).toHex();
+        ret[n].light = '#' + tinycolor(color).brighten(40).toHex();
     };
     return ret;
 }
@@ -144,11 +153,11 @@ function getBoxFromCoord(xy) {
     var pitch = getPitch(offset);
     var noteDisplay = getNoteDisplayFromPitch(pitch);
     var tritone = getNoteDisplayFromPitch(pitch + 6);
-    var color = noteToColor[noteDisplay];
-    var isDark = tinycolor(color).isDark()
-    var dark = '#' + tinycolor(color).desaturate(20).darken(isDark ? 10 : 20).toHex();
-    var veryDark = '#' + tinycolor(color).desaturate(20).darken(40).toHex();
-    var light = '#' + tinycolor(color).brighten(40).toHex();
+    var isDark = noteToColors[noteDisplay].isDark;
+    var slightlyDark = noteToColors[noteDisplay].slightlyDark;
+    var dark = noteToColors[noteDisplay].dark;
+    var veryDark = noteToColors[noteDisplay].veryDark; 
+    var light = noteToColors[noteDisplay].light;
     var textColor = '#' + tinycolor(noteToColor[tritone]).desaturate(20).lighten(20).toHex();
     return {
         xy: xy,
@@ -156,8 +165,8 @@ function getBoxFromCoord(xy) {
         noteDisplay: noteDisplay,
         pitch: pitch,
         //note: this.offset + lowC,
-        color: color,
-        altColor: noteToAltColor[noteDisplay],
+        color: noteToColors[noteDisplay].color,
+        altColor: noteToColors[noteDisplay],
         textColor: textColor,
         border: false,
         bounds: getBoundsForCoord(xy),
@@ -165,11 +174,12 @@ function getBoxFromCoord(xy) {
             if (this.border) {
                 this.drawColor(veryDark);
                 this.drawSmall(light, 55);
+                this.drawSmall(slightlyDark, 10);
             } else {
                 this.drawColor("black");
                 this.drawSmall(dark, 55);
+                this.drawSmall(this.color, 10);
             }
-            this.drawSmall(this.color, 10);
             ctx.fillStyle = this.textColor;
             var font = Math.floor(this.bounds.wh.x/6) + 'px sans serif';
             ctx.font = font;
@@ -286,7 +296,7 @@ function init() {
                 canvas.addEventListener('mouseout', end);
             }
             globals.canvas = canvas;
-            noteToAltColor = buildNoteToAltColor();
+            noteToColors = buildNoteToColors();
             window.addEventListener('resize', resize);
             resize();
             setUpCtrl();
