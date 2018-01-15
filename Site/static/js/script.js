@@ -7,8 +7,9 @@ var globals = {
 };
 
 var colors = {
-    LISTEN: '#f77',
-    PLAY: '#7f7',
+    LISTEN: '#9feeff',
+    PLAY: '#9feeff',
+    CORRECT: 'white',
     INCORRECT: '#ff0'
 };
 
@@ -159,7 +160,7 @@ function getBoxFromCoord(xy) {
     var altColor = noteToColors[noteDisplay].altColor;
     var veryDark = noteToColors[noteDisplay].veryDark; 
     var light = noteToColors[noteDisplay].light;
-    var textColor = '#' + tinycolor(noteToColor[tritone]).desaturate(20).lighten(20).toHex();
+    var textColor = '#' + tinycolor(noteToColor[tritone]).desaturate(10).lighten(20).toHex();
     return {
         xy: xy,
         offset: offset,
@@ -181,13 +182,13 @@ function getBoxFromCoord(xy) {
                 this.drawSmall(this.color, 10);
             }
             ctx.fillStyle = this.textColor;
-            var font = Math.floor(this.bounds.wh.x/6) + 'px sans serif';
+            var font = Math.floor(this.bounds.wh.x/5) + 'px sans serif';
             ctx.font = font;
             ctx.fillText(
                 noteToSpellings[this.noteDisplay],
                 this.bounds.xy.x + this.bounds.wh.x * 0.15,
                 this.bounds.xy.y + this.bounds.wh.y * 0.85,
-                this.bounds.wh.x
+                this.bounds.wh.x - (this.bounds.wh.x / 10)
             );
         },
         drawAlt: function() {
@@ -387,7 +388,7 @@ function resize() {
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
     ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#666';
+    ctx.fillStyle = '#888';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     draw();
 }
@@ -535,27 +536,27 @@ function isDone(recording, lesson) {
 function listening() {
     var instruction = $('#instruction');
     instruction.text('LISTEN');
-    instruction.css({'color': colors.LISTEN});
+    //instruction.css({'color': colors.LISTEN});
     state.playListen = playListen.LISTENING;
 }
 
 function playing() {
     var instruction = $('#instruction');
     instruction.text('PLAY IT BACK');
-    instruction.css({'color': colors.PLAY});
+    //instruction.css({'color': colors.PLAY});
     state.playListen = playListen.PLAYING;
 }
 
 function correct() {
     var instruction = $('#instruction');
     instruction.text('CORRECT');
-    instruction.css({'color': colors.PLAY});
+    //instruction.css({'color': colors.CORRECT});
 }
 
 function incorrect() {
     var instruction = $('#instruction');
     instruction.text('INCORRECT');
-    instruction.css({'color': colors.INCORRECT});
+    //instruction.css({'color': colors.INCORRECT});
 }
 
 
@@ -604,7 +605,7 @@ var timer = {
         var start = unixtime();
         var setter = function() {
             var el = $("#timer"); 
-            el.css({'color': colors.PLAY});
+            //el.css({'color': colors.PLAY});
             el.text(
                 Math.ceil((waitMillis - (unixtime() - start))/1000)
             );
