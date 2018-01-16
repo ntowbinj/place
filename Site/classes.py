@@ -21,7 +21,8 @@ LessonCreate = namedtuple('LessonCreate', lesson_fields)
 Lesson = namedtuple('Lesson', all_lesson_fields)
 
 user_fields = [
-    'create_time'
+    'create_time',
+    'addr'
 ]
 all_user_fields = ['user_id'] + user_fields
 

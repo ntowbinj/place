@@ -192,8 +192,12 @@ def get_lesson_factory(recent_lesson_recordings):
         return promote_random(latest)
     if stats['count'] > 10 and stats['success_rate'] < 0.7:
         return demote_random(latest)
-    print 'not changing'
-    return latest
+    if stats['count'] <= 20:
+        print 'not changing'
+        return latest
+    else:
+        print 'shifting'
+        return demote_random(promote_random(latest))
 
 def get_lesson_set(user_id, factory, n):
     return [get_lesson(user_id, factory) for x in range(n)]
@@ -206,7 +210,7 @@ def get_lesson(user_id, factory):
         create_time=int(time.time()),
         note_duration_millis=factory.note_duration_millis,
         wait_time_millis=10000,
-        tolerance=int(max(1, math.floor((factory.length - factory.hint_prefix)*0.2))),
+        tolerance=int(max(1, ((factory.length - factory.hint_prefix)) * 0.2 + (factory.hint_prefix * 0.3 * 0.2))),
         w=factory.w,
         h=factory.h,
         base=base,
