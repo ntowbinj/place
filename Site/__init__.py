@@ -12,7 +12,6 @@ app.secret_key = config.secret_key
 
 @app.before_request
 def ensure_user():
-    print request.remote_addr
     get_or_create_user()
 
 @app.route("/")
