@@ -19,7 +19,6 @@ app.logger.setLevel(logging.INFO)
 
 @app.before_request
 def ensure_user():
-    app.logger.info(request.headers)
     get_or_create_user()
 
 @app.route("/")

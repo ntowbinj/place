@@ -160,7 +160,12 @@ function getBoxFromCoord(xy) {
     var altColor = noteToColors[noteDisplay].altColor;
     var veryDark = noteToColors[noteDisplay].veryDark; 
     var light = noteToColors[noteDisplay].light;
-    var textColor = '#' + tinycolor(noteToColor[tritone]).desaturate(10).lighten(20).toHex();
+    var textColor;
+    if (isDark) {
+        textColor = '#' + tinycolor(noteToColor[tritone]).desaturate(10).toHex();
+    } else {
+        textColor = '#' + tinycolor(noteToColor[tritone]).desaturate(10).toHex();
+    }
     return {
         xy: xy,
         offset: offset,
@@ -171,18 +176,38 @@ function getBoxFromCoord(xy) {
         textColor: textColor,
         border: false,
         bounds: getBoundsForCoord(xy),
+        drawCircle: function() {
+            var radius = Math.min(this.bounds.wh.x, this.bounds.wh.y) / 10;
+            ctx.beginPath();
+            ctx.arc(
+                this.bounds.xy.x + this.bounds.wh.x/2,
+                this.bounds.xy.y + this.bounds.wh.y/2,
+                radius,
+                0,
+                2*Math.PI
+            );
+            ctx.fillStyle = textColor;
+            ctx.fill()
+        },
         draw: function() {
             if (this.border) {
                 this.drawColor(veryDark);
                 this.drawSmall(light, 55);
-                this.drawSmall(slightlyDark, 10);
+                this.drawSmall(this.color, 10);
+                this.drawCircle();
             } else {
                 this.drawColor("black");
                 this.drawSmall(dark, 55);
                 this.drawSmall(this.color, 10);
             }
             ctx.fillStyle = this.textColor;
-            var font = Math.floor(this.bounds.wh.x/5) + 'px sans serif';
+            var textSizeDivider;
+            if (dim.x < 2) {
+                textSizeDivider = 10;
+            } else {
+                textSizeDivider = 5;
+            }
+            var font = Math.floor(this.bounds.wh.x / textSizeDivider) + 'px sans serif';
             ctx.font = font;
             ctx.fillText(
                 noteToSpellings[this.noteDisplay],
@@ -194,6 +219,9 @@ function getBoxFromCoord(xy) {
         drawAlt: function() {
             this.drawColor(light);
             this.drawSmall(altColor, 20);
+            if (this.border) {
+                this.drawCircle();
+            }
         },
         drawColor: function(color) {
             ctx.fillStyle = color;
