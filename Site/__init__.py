@@ -28,7 +28,7 @@ def hello():
 def make_safe(lesson):
     return dict(
         lessonKey=hashids.encrypt(lesson.lesson_id),
-        restMillis=lesson.note_duration_millis/4,
+        restMillis=lesson.note_duration_millis/3,
         noteDurationMillis=lesson.note_duration_millis,
         sequence=lesson.sequence,
         hintPrefix=lesson.hint_prefix,

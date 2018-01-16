@@ -138,7 +138,7 @@ def get_stats(les_recs):
 def get_base_lesson_factory():
     return LessonFactory(
         max_interval=4,
-        note_duration_millis=400,
+        note_duration_millis=500,
         length=2,
         hint_prefix=1,
         w=1,
@@ -150,7 +150,7 @@ def get_lessons_for_user(user_id):
     lesrecs = [LessonRecording(**lesrec) for lesrec in data.do_select(
         dict(lessons=Lesson, recordings=Recording),
         ' FROM lessons JOIN recordings USING (lesson_id) WHERE user_id = %s ORDER BY lessons.lesson_id DESC limit %s',
-        (user_id, 20)
+        (user_id, 50)
     )]
     factory = get_lesson_factory(lesrecs)
     print 'now: %s' % str(factory)
@@ -208,7 +208,7 @@ def get_lesson(user_id, factory):
         create_time=int(time.time()),
         note_duration_millis=factory.note_duration_millis,
         wait_time_millis=20000 if factory.w * factory.h <= 10 else 10000,
-        tolerance=int(max(1, ((factory.length - factory.hint_prefix)) * 0.2 + (factory.hint_prefix * 0.3 * 0.2))),
+        tolerance=int(max(1, ((factory.length - factory.hint_prefix)) * 0.4 + (factory.hint_prefix * 0.3 * 0.4))),
         w=factory.w,
         h=factory.h,
         base=base,
