@@ -1,18 +1,16 @@
 import config
 import alg
 import json
-import logg
 import logging
 from data import do_insert
 from classes import Recording
 from flask import Flask, render_template, jsonify, request, g, make_response, session
 from collections import namedtuple
 from usercookie import get_or_create_user, hashids
-from logg import log
 
 app = Flask(__name__)
 app.secret_key = config.secret_key
-app.logger.addHandler(logg.log)
+app.logger.addHandler(logging.StreamHandler())
 app.logger.setLevel(logging.INFO)
 
 @app.before_request
