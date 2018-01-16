@@ -1,6 +1,5 @@
 import time
 import json
-import pdb
 import operator as op
 import math
 import random
@@ -183,7 +182,6 @@ def get_lesson_factory(recent_lesson_recordings):
     print stats
     if stats['count'] <= 3:
         return latest
-    #pdb.set_trace()
     if stats['count'] > 3 and stats['success_rate'] == 0:
         return demote_random(latest)
     if stats['count'] > 3 and stats['success_rate'] == 1:
