@@ -10,7 +10,11 @@ from usercookie import get_or_create_user, hashids
 
 app = Flask(__name__)
 app.secret_key = config.secret_key
-app.logger.addHandler(logging.StreamHandler())
+if app.debug:
+    app.logger.addHandler(logging.StreamHandler())
+else:
+    gunicorn_error_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers.extend(gunicorn_error_logger.handlers)
 app.logger.setLevel(logging.INFO)
 
 @app.before_request
