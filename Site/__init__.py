@@ -2,6 +2,7 @@ import config
 import alg
 import json
 import logging
+import datetime
 from data import do_insert
 from classes import Recording
 from flask import Flask, render_template, jsonify, request, g, make_response, session
@@ -17,9 +18,18 @@ else:
     app.logger.handlers.extend(gunicorn_error_logger.handlers)
 app.logger.setLevel(logging.INFO)
 
+
+
 @app.before_request
 def ensure_user():
     get_or_create_user()
+
+@app.after_request
+def set_user_cookie(resp):
+    expire_date = datetime.datetime.now() + datetime.timedelta(days=90)
+    user_id = g.user_id
+    resp.set_cookie('u', hashids.encrypt(user_id), expires=expire_date)
+    return resp
 
 @app.route("/")
 def hello():
