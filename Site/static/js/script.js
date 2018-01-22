@@ -32,6 +32,7 @@ var state = {
     lessonReqId: -1
 }
 var ctx;
+
 var noteToColor = {
     'C': '#fd0100',
     'C#': '#6537fc',
@@ -46,6 +47,7 @@ var noteToColor = {
     'A#': '#97014b',
     'B': '#9feeff'
 }
+
 var noteToSpellings = {
     'C': 'C',
     'C#': 'C#/Db',
@@ -270,10 +272,9 @@ function getGrid() {
 }
 
 function xyFromEvent(ev) {
-    var ret = _xy(
-        ev.pageX - globals.canvas.offsetLeft,
-        ev.pageY - globals.canvas.offsetTop
-    );
+    var x = ev.offsetX ? ev.offsetX : ev.pageX;
+    var y = ev.offsetY ? ev.offsetY : ev.pageY;
+    var ret = _xy(x, y);
     return ret;
 }
 
