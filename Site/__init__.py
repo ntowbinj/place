@@ -26,7 +26,7 @@ def ensure_user():
 
 @app.after_request
 def set_user_cookie(resp):
-    expire_date = datetime.datetime.now() + datetime.timedelta(days=90)
+    expire_date = datetime.datetime.now() + datetime.timedelta(days=200)
     user_id = g.user_id
     resp.set_cookie('u', hashids.encrypt(user_id), expires=expire_date)
     return resp
