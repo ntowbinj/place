@@ -207,7 +207,7 @@ def get_lesson(user_id, factory):
         user_id=user_id,
         create_time=int(time.time()),
         note_duration_millis=factory.note_duration_millis,
-        wait_time_millis=20000 if factory.w * factory.h <= 10 else 10000,
+        wait_time_millis=20000,
         tolerance=int(max(1, ((factory.length - factory.hint_prefix)) * 0.4 + (factory.hint_prefix * 0.3 * 0.4))),
         w=factory.w,
         h=factory.h,

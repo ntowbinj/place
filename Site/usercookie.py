@@ -1,4 +1,4 @@
-from flask import request, session, g
+from flask import request,  g
 from hashids import Hashids
 import config
 import data
