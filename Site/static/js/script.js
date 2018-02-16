@@ -49,7 +49,7 @@ var noteToColorScriabin = {
 }
 
 var white = 'white';
-var black = '#222';
+var black = '#333';
 var noteToColorPiano = {
     'C': white,
     'C#': black,
@@ -95,12 +95,9 @@ function buildNoteToColors() {
         ret[n].idleColor = noteToColorPiano[n];
         if (ret[n].idleColor === white) {
             ret[n].idleDark = '#' + tinycolor(ret[n].idleColor).darken(10).toHex();
-        } else {
-            ret[n].idleDark = '#' + tinycolor(ret[n].idleColor).darken(20).toHex();
-        }
-        if (ret[n].idleColor === white) {
             ret[n].idleText = '#888';
         } else {
+            ret[n].idleDark = '#' + tinycolor(ret[n].idleColor).darken(8).toHex();
             ret[n].idleText = '#ccc';
         }
         ret[n].altColor = '#' + tinycolor(noteToColorScriabin[n]).brighten(10).toHex();
