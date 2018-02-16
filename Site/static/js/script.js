@@ -33,7 +33,7 @@ var state = {
 }
 var ctx;
 
-var noteToColor = {
+var noteToColorScriabin = {
     'C': '#fd0100',
     'C#': '#6537fc',
     'D': '#ffff6b',
@@ -46,6 +46,23 @@ var noteToColor = {
     'A': '#9fff9e',
     'A#': '#97014b',
     'B': '#9feeff'
+}
+
+var white = 'white';
+var black = '#222';
+var noteToColorPiano = {
+    'C': white,
+    'C#': black,
+    'D': white,
+    'D#': black,
+    'E': white,
+    'F': white,
+    'F#': black,
+    'G': white,
+    'G#': black,
+    'A': white,
+    'A#': black,
+    'B': white
 }
 
 var noteToSpellings = {
@@ -62,6 +79,7 @@ var noteToSpellings = {
     'A#': 'A#/Bb',
     'B': 'B'
 }
+
 var noteToColors;
 
 function byId(id) {
@@ -70,11 +88,22 @@ function byId(id) {
 
 function buildNoteToColors() {
     ret = {};
-    for (var n in noteToColor) {
+    for (var n in noteToColorScriabin) {
         ret[n] = {};
-        var color = noteToColor[n];
+        var color = noteToColorScriabin[n];
         ret[n].color = color;
-        ret[n].altColor = '#' + tinycolor(noteToColor[n]).brighten(20).toHex();
+        ret[n].idleColor = noteToColorPiano[n];
+        if (ret[n].idleColor === white) {
+            ret[n].idleDark = '#' + tinycolor(ret[n].idleColor).darken(10).toHex();
+        } else {
+            ret[n].idleDark = '#' + tinycolor(ret[n].idleColor).darken(20).toHex();
+        }
+        if (ret[n].idleColor === white) {
+            ret[n].idleText = '#888';
+        } else {
+            ret[n].idleText = '#ccc';
+        }
+        ret[n].altColor = '#' + tinycolor(noteToColorScriabin[n]).brighten(10).toHex();
         var isDark = tinycolor(color).isDark();
         ret[n].isDark = isDark;
         ret[n].slightlyDark = '#' + isDark ? color : tinycolor(color).darken(5).toHex();
@@ -162,11 +191,14 @@ function getBoxFromCoord(xy) {
     var altColor = noteToColors[noteDisplay].altColor;
     var veryDark = noteToColors[noteDisplay].veryDark; 
     var light = noteToColors[noteDisplay].light;
+    var idleColor = noteToColors[noteDisplay].idleColor;
+    var idleDark = noteToColors[noteDisplay].idleDark;
+    var idleText = noteToColors[noteDisplay].idleText;
     var textColor;
     if (isDark) {
-        textColor = '#' + tinycolor(noteToColor[tritone]).desaturate(10).toHex();
+        textColor = '#' + tinycolor(noteToColorScriabin[tritone]).desaturate(10).toHex();
     } else {
-        textColor = '#' + tinycolor(noteToColor[tritone]).desaturate(10).toHex();
+        textColor = '#' + tinycolor(noteToColorScriabin[tritone]).desaturate(10).toHex();
     }
     return {
         xy: xy,
@@ -178,31 +210,20 @@ function getBoxFromCoord(xy) {
         textColor: textColor,
         border: false,
         bounds: getBoundsForCoord(xy),
-        drawCircle: function() {
-            var radius = Math.min(this.bounds.wh.x, this.bounds.wh.y) / 10;
-            ctx.beginPath();
-            ctx.arc(
-                this.bounds.xy.x + this.bounds.wh.x/2,
-                this.bounds.xy.y + this.bounds.wh.y/2,
-                radius,
-                0,
-                2*Math.PI
-            );
-            ctx.fillStyle = textColor;
-            ctx.fill()
-        },
         draw: function() {
+            var textColor;
             if (this.border) {
-                this.drawColor(veryDark);
-                this.drawSmall(light, 55);
-                this.drawSmall(this.color, 10);
-                this.drawCircle();
-            } else {
                 this.drawColor("black");
                 this.drawSmall(dark, 55);
                 this.drawSmall(this.color, 10);
+                textColor = this.textColor;
+            } else {
+                this.drawColor("black");
+                this.drawSmall(idleDark, 55);
+                this.drawSmall(idleColor, 10);
+                textColor = idleText;
             }
-            ctx.fillStyle = this.textColor;
+            ctx.fillStyle = textColor;
             var textSizeDivider;
             if (dim.x < 2) {
                 textSizeDivider = 10;
@@ -221,9 +242,6 @@ function getBoxFromCoord(xy) {
         drawAlt: function() {
             this.drawColor(light);
             this.drawSmall(altColor, 20);
-            if (this.border) {
-                this.drawCircle();
-            }
         },
         drawColor: function(color) {
             ctx.fillStyle = color;
@@ -280,6 +298,7 @@ function xyFromEvent(ev) {
 
 
 function init() {
+    MIDI = window.MIDI;
     MIDI.loader = new widgets.Loader;
     MIDI.loadPlugin({
         instrument: "acoustic_grand_piano",
