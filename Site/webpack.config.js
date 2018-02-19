@@ -3,8 +3,7 @@ const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
 module.exports = {
     entry:  {
-        script: './static/js/script.js',
-        midi: './static/js/midi.js'
+        script: './static/js/script.js'
     },
     output: {
         filename: '[name].bundle.js',
