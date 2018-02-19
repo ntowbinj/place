@@ -50,8 +50,8 @@
 }
 
 .demo {
-    float: right;
-    font-size: 5px;
+    float: left;
+    font-size: 15px;
     margin-top: 20px;
     margin-right: 10px;
 }
