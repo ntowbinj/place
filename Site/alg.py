@@ -185,9 +185,9 @@ def get_lesson_factory(recent_lesson_recordings):
     if stats['count'] > 3 and stats['success_rate'] == 0:
         return demote_random(latest)
     if stats['count'] > 3 and stats['success_rate'] == 1:
-        return promote_random(promote_random(latest))
-    if stats['count'] > 4 and stats['success_rate'] > 0.8:
-        return promote_random(promote_random(latest))
+        return promote_random(latest)
+    if stats['count'] > 10 and stats['success_rate'] > 0.9:
+        return promote_random(latest)
     if stats['count'] > 10 and stats['success_rate'] < 0.7:
         return demote_random(latest)
     if stats['count'] <= 20:
