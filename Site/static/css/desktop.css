@@ -21,25 +21,32 @@
 
 .buttn {
     height: 50px;
-    width: 200px;
+    width: 150px;
     border-radius: 2px;
     color: white;
     padding-top: 20px;
-    font-size: 35px;
+    font-size: 30px;
 }
 
 #status {
-    padding: 20px;
+    padding: 10px;
     margin-left: 30px;
     float: left;
-    height: 47px;
+    height: 55px;
+    width: 200px;
     background-color: black;
     //text-align: center;
     font-family: monospace;
-    font-size: 47px;
+    font-size: 25px;
     font-weight: lighter;
     color: #8f8;
     text-shadow: -3px 1px green, 1px 3px green, 3px 1px green, 1px -3px green;
     border-radius: 10px;
 }
+
+#timer {
+    font-size: 27px;
+}
+
+
 

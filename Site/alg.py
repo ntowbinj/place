@@ -31,10 +31,10 @@ def demote_random(lesson_factory):
 def promote_random(lesson_factory):
     print 'promoting'
     promotions = [
-        promote_interval,
         promote_length
-
     ]
+    if lesson_factory.w * FOURTH > lesson_factory.max_interval:
+        promotions.append(promote_interval)
     if lesson_factory.length > 3:
         promotions.append(promote_note_duration)
     if lesson_factory.w < 3:
@@ -221,18 +221,29 @@ def get_lesson(user_id, factory):
     lesson_id = data.do_insert('lessons', lesson_create)
     return Lesson(lesson_id, **lesson_create._asdict())
 
+def get_rand(start, end):
+    gap = (end - start) + 1
+    power = 1 + (0.5/gap)
+    image = gap**power
+    res = (random.random() * image)**(1/power)
+    return int(start + res)
+
+def get_rand_up_or_down(intv):
+    res = get_rand(1, intv)
+    neg = random.randint(0, 1)
+    if neg:
+        return -1 * res
+    return res
+
 
 def get_lesson_sequence(base, factory):
     capacity = factory.w * factory.h;
     seq = [0]
     while len(seq) < factory.length:
-        intv = random.randint(
-            -1 * factory.max_interval,
-            factory.max_interval
-        )
-        if not intv:
-            continue
+        intv = get_rand_up_or_down(factory.max_interval)
         nxt = seq[-1] + intv
+        if not nxt:
+            continue
         candidate = seq + [nxt]
         gap = max(candidate) - min(candidate)
         if gap < capacity:

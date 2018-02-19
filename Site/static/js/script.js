@@ -355,10 +355,10 @@ function getStartStop() {
 }
 
 var superIrritatingHack = false;
+var startText = "START"; 
+var stopText = "STOP";
 function setUpCtrl() {
     var startStop = getStartStop();
-    var startText = "START"; // storing state in the DOM :D
-    var stopText = "STOP";
     startStop.onclick = function() {
         if (!superIrritatingHack) {
             superIrritatingHack = true;
@@ -368,11 +368,9 @@ function setUpCtrl() {
         var innerText = startStop.innerText;
         if (innerText === startText) {
             start();
-            startStop.innerText = stopText;
         } else {
             console.log("stopping");
             stop();
-            startStop.innerText = startText;
         }
     }
 }
@@ -462,6 +460,7 @@ function setGrid(lesson) {
 
 function start() {
     state.running = true;
+    startStop.innerText = stopText;
     run();
 }
 
@@ -469,6 +468,7 @@ function stop() {
     if (state.playListen === playListen.PLAYING) {
         playState.stops++;
     }
+    startStop.innerText = startText;
     clearRequest(state.lessonReqId);
     clearDownHandlers();
     clear(PLAYING_GROUP);
@@ -551,7 +551,7 @@ function clear(group) {
     delete state.timeouts[group];
 }
 
-function isSubSequence(containee, container) {
+function subSeqRemainder(containee, container) {
     var j = 0;
     for (var i = 0; i < container.length; i++) {
         if (j >= containee.length) {
@@ -561,18 +561,41 @@ function isSubSequence(containee, container) {
             j++;
         }
     }
-    return j >= containee.length;
+    return containee.length - j;
+}
+
+function isSubsequenceGenerous(containee, container, maxlen) {
+    var attempts = 0;
+    var lastAttemptIndex = 0;
+    for (var i = 0; i < container.length; i++) {
+        if (container[i] == containee[0]) {
+            attempts++;
+            remainder = subSeqRemainder(containee, container.slice(i, Math.min(container.length, i + maxlen)));
+            if (remainder <= 0) {
+                return {success: true, canSucceed: true};
+            }
+            if (attempts > 2) {
+                return {success: false, canSucceed: false};
+            }
+            lastAttemptIndex = i;
+        }
+    }
+    if (container.length - lastAttemptIndex >= maxlen) {
+        return {success: false, canSucceed: false};
+    }
+    return {success: false, canSucceed: true};
 }
 
 function isDone(recording, lesson) {
     var doneLength = lesson.sequence.length + lesson.tolerance;
-    var success = isSubSequence(lesson.sequence, recording.notes);
+    var successResult = isSubsequenceGenerous(lesson.sequence, recording.notes, doneLength);
+    var success = successResult.success;
     var wait = success ? globals.DONE_WAIT_SUCCESS : globals.DONE_WAIT_FAIL;
     var notTooLong = {isDone: success, wait: wait, success: success};
     if (success) {
         return notTooLong;
     }
-    if (recording.notes.length >= doneLength) {
+    if (!successResult.canSucceed) {
         return {isDone: true, wait: globals.DONE_WAIT_FAIL, success: false};
     }
     return notTooLong;
@@ -721,7 +744,7 @@ function doRecordResponse(lesson, finishRecording) {
             clear(PLAYING_GROUP);
             finalizeAndContinue();
         }
-    }
+    };
     state.downHandlers[DOWN_HANDLER] = downHandler;
     timeout(
         PLAYING_GROUP,
