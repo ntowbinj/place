@@ -448,6 +448,7 @@ function finishBatch() {
 }
 
 function startBatch(result) {
+    setLevel(result.level);
     doAllLessons(result.lessonList, finishBatch);
 }
 
@@ -599,6 +600,12 @@ function isDone(recording, lesson) {
         return {isDone: true, wait: globals.DONE_WAIT_FAIL, success: false};
     }
     return notTooLong;
+}
+
+function setLevel(level) {
+    var levelElement = $('#level');
+    console.log('level: ' + level);
+    levelElement.text('level ' + level);
 }
 
 function listening() {

@@ -51,7 +51,7 @@ body {
     margin-left: 30px;
     padding: 20px;
     float: left;
-    width: 400px;
+    width: 530px;
     height: 129px;
     background-color: black;
     //text-align: center;
@@ -72,10 +72,19 @@ body {
     font-size: 50px;
 }
 
+#level {
+    font-size: 30px;
+    float: right;
+    padding-top: 50px;
+    bottom: 10px;
+    right: 10px;
+
+}
+
 .demo {
     float: right;
-    font-size: 40px;
+    font-size: 35px;
     margin-top: 20px;
-    margin-right: 10px;
+    margin-right: 30px;
 }
 

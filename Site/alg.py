@@ -154,7 +154,11 @@ def get_lessons_for_user(user_id):
     )]
     factory = get_lesson_factory(lesrecs)
     print 'now: %s' % str(factory)
-    return get_lesson_set(user_id, factory, 5)
+    lessons = get_lesson_set(user_id, factory, 5)
+    levels = [get_level_from_factory(get_factory_from_lesson(lesrec.lesson)) * (1 if lesrec.recording.passed else 0.5) for lesrec in lesrecs]
+    level = int(sum(levels)/len(levels)) if len(levels) else int(get_level_from_factory(get_base_lesson_factory())/2)
+    return {'lessons': lessons, 'level': level}
+
 
 def get_factory_from_lesson(lesson):
     ret = LessonFactory(
@@ -253,6 +257,14 @@ def get_lesson_sequence(base, factory):
     slack = capacity - (max(seq) - min(seq))
     seq_base_offset = random.randint(0, slack - 1) # randint is inclusive range :(
     return [n + base + seq_base_offset for n in relative]
+
+def get_level_from_factory(factory):
+    ret = ((factory.length - factory.hint_prefix) + 0.3 * factory.hint_prefix)
+    ret *= (factory.max_interval * factory.w * factory.h)**0.5
+    ret *= (1.0/factory.note_duration_millis)
+    return int(ret * 1000)
+        
+        
 
 
     

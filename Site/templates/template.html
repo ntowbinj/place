@@ -18,7 +18,7 @@
         <script src="{{ url_for('static', filename='js/MIDI.js/' ~ f ~ '.js') }}"></script>
         {% endfor %}
         <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
-        <script type="text/javascript" src="{{ url_for('static', filename='build/script.bundle.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='js/script.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='js/tinycolor.js') }}"></script>
     </head>
     <body>
@@ -32,6 +32,7 @@
                     <span id="instruction"></span>
                     <br/>
                     <span id="timer"></span>
+                    <span id="level"></span>
                 </div>
                 <a class="demo" href="https://youtu.be/sZvSrBl832Y">demo<br>video</a>
             </div>

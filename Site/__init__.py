@@ -63,12 +63,17 @@ def from_safe(lesson_key, safe_recording):
         note_times=safe_recording['noteTimes']
     )
 
+@app.route("/exc123")
+def exc123():
+    raise 'dogs'
+
 
 @app.route("/lessons")
 def lessons():
     user_id = g.user_id
-    lessons = [make_safe(l) for l in alg.get_lessons_for_user(user_id)]
-    ret = dict(lessonList=lessons, level=1)
+    lesson_result = alg.get_lessons_for_user(user_id)
+    lessons = [make_safe(l) for l in lesson_result['lessons']]
+    ret = dict(lessonList=lessons, level=lesson_result['level'])
     return jsonify(ret)
 
 
