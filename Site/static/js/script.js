@@ -295,13 +295,25 @@ function xyFromEvent(ev) {
 
 
 function init() {
+    event('js');
+    $("#ctrlWrapper").css("visibility", "visible");
+    var loaded = false;
+    noteToColors = buildNoteToColors();
+    setTimeout(function() {
+        if (!loaded) {
+            resize();
+        }
+    }, 2000);
+
     MIDI = window.MIDI;
-    MIDI.loader = new widgets.Loader;
+    globals.canvas = canvas;
     MIDI.loadPlugin({
         instrument: "acoustic_grand_piano",
         soundfontUrl: "/static/js/MIDI.js/soundfont/",
         callback: function() {
-            MIDI.loader.stop();	
+            loaded = true;
+            $("#loader").hide();
+            event('midiLoaded');
             canvas = byId('canvas');
             var handler = function(ev) {
                 var list = [resolve(xyFromEvent(ev))];
@@ -316,7 +328,12 @@ function init() {
                 clickstate = false;
                 touches([]);
             };
+            var touched = false;
             var doTouch = function(ev) {
+                if (!touched) {
+                    event('touch');
+                    touched = true;
+                }
                 ev.preventDefault();
                 var touchList = [];
                 tl = ev;
@@ -341,10 +358,8 @@ function init() {
                 canvas.addEventListener('mouseup', end);
                 canvas.addEventListener('mouseout', end);
             }
-            globals.canvas = canvas;
-            noteToColors = buildNoteToColors();
-            window.addEventListener('resize', resize);
             resize();
+            window.addEventListener('resize', resize);
             setUpCtrl();
         }
     });
@@ -587,9 +602,22 @@ function isSubsequenceGenerous(containee, container, maxlen) {
     return {success: false, canSucceed: true};
 }
 
+function removeUnisons(seq) {
+    if (seq.length < 2) {
+        return seq;
+    }
+    var ret = [seq[0]];
+    for (var i = 1; i < seq.length; i++) {
+        if (ret[ret.length - 1] != seq[i]) {
+            ret.push(seq[i]);
+        }
+    }
+    return ret;
+}
+
 function isDone(recording, lesson) {
     var doneLength = lesson.sequence.length + lesson.tolerance;
-    var successResult = isSubsequenceGenerous(lesson.sequence, recording.notes, doneLength);
+    var successResult = isSubsequenceGenerous(lesson.sequence, removeUnisons(recording.notes), doneLength);
     var success = successResult.success;
     var wait = success ? globals.DONE_WAIT_SUCCESS : globals.DONE_WAIT_FAIL;
     var notTooLong = {isDone: success, wait: wait, success: success};
@@ -833,6 +861,12 @@ function postJson(path, data, success) {
         {json: JSON.stringify(data)}, // why :(
         success,
         'json'
+    );
+}
+
+function event(ev) {
+    $.post(
+        "/event/" + ev
     );
 }
 

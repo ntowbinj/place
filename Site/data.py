@@ -59,6 +59,9 @@ def do_insert(table, obj):
     close()
     return ret
 
+def commit():
+    conn.commit()
+
 def serialize(v):
     if type(v) is list:
         return json.dumps(v)

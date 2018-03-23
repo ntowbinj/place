@@ -3,7 +3,9 @@ import alg
 import json
 import logging
 import datetime
-from data import do_insert
+import time
+from data import do_insert, get_cursor, close, commit
+from events import event_value_ids
 from classes import Recording
 from flask import Flask, render_template, jsonify, request, g, make_response, session
 from collections import namedtuple
@@ -83,6 +85,19 @@ def recording():
     for rec in recordings:
         do_insert('recordings', rec)
     return 'OK';
+
+@app.route("/event/<ev>", methods=['POST'])
+def post_event(ev):
+    event(g.user_id, ev)
+    return 'OK'
+
+
+def event(user_id, event_name):
+    sql = "INSERT INTO events (user_id, timestamp, event_value_id) VALUES (%s, %s, %s)"
+    cursor = get_cursor();
+    cursor.execute(sql, (user_id, time.time(), event_value_ids[event_name]))
+    commit()
+    close()
 
 def hack_json():
     return from_safe_buffer(json.loads(request.form['json']))

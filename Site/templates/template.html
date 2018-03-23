@@ -1,8 +1,10 @@
 <!doctype html>
 <html>
     <head>
-        <title>
-        </title>
+        <title>Adaptive Ear Training</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta name="description" content="Portable chromatic ear training that adapts to your skill level">
+
         <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
         <link type="text/css" href="{{ url_for('static', filename='css/reset.css') }}" rel="stylesheet">
         <link type="text/css" href="{{ url_for('static', filename='css/base.css') }}" rel="stylesheet">
@@ -14,18 +16,19 @@
         {% for f in ['AudioDetect', 'LoadPlugin', 'Plugin', 'Player'] %}
         <script src="{{ url_for('static', filename='js/MIDI.js/js/MIDI/' ~ f ~ '.js') }}"></script>
         {% endfor %}
-        {% for f in ['js/Window/DOMLoader.XMLHttp', 'js/Widgets/Loader', 'inc/Base64', 'inc/base64binary'] %}
+        {% for f in ['js/Window/DOMLoader.XMLHttp', 'inc/Base64', 'inc/base64binary'] %}
         <script src="{{ url_for('static', filename='js/MIDI.js/' ~ f ~ '.js') }}"></script>
         {% endfor %}
         <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
-        <script type="text/javascript" src="{{ url_for('static', filename='build/script.bundle2.js') }}"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='build/script.bundle7.js') }}"></script>
         <script type="text/javascript" src="{{ url_for('static', filename='js/tinycolor.js') }}"></script>
     </head>
     <body>
         <div id="canvasDiv">
             <canvas style="height: 100%; width: 100%;" id="canvas"></canvas>
         </div>
-        <div id="ctrlWrapper">
+        <div id="loader"></div>
+        <div id="ctrlWrapper" style="visibility: hidden">
             <div id="ctrl">
                 <a id="startStop" class="buttn">START</a>
                 <div id="status">

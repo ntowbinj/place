@@ -10,41 +10,41 @@ from itertools import groupby
 
 FOURTH = 5
 
-def demote_random(lesson_factory):
+def demote_random(fac):
     print 'demoting'
     demotions = []
-    if lesson_factory.length > 2:
+    if fac.length > 2:
         demotions.append(demote_note_duration)
-    if lesson_factory.max_interval > 2:
+    if fac.max_interval > 2:
         demotions.append(demote_interval)
-    if lesson_factory.length > 2:
+    if fac.length > 2:
         demotions.append(demote_length)
-    if lesson_factory.w * FOURTH > lesson_factory.max_interval + 2:
+    if fac.w * FOURTH > fac.max_interval + 2:
         demotions.append(demote_width)
-    if lesson_factory.hint_prefix < lesson_factory.length - 1:
+    if fac.hint_prefix < fac.length - 1 and fac.hint_prefix < 4:
         demotions.append(demote_hint_prefix)
     if not demotions:
-        return lesson_factory
+        return fac
     rand = random.randint(0, len(demotions) - 1)
-    return demotions[rand](lesson_factory)
+    return demotions[rand](fac)
 
-def promote_random(lesson_factory):
+def promote_random(fac):
     print 'promoting'
     promotions = [
         promote_length
     ]
-    if lesson_factory.w * FOURTH > lesson_factory.max_interval:
+    if fac.w * FOURTH > fac.max_interval + 2:
         promotions.append(promote_interval)
-    if lesson_factory.length > 3:
+    if fac.length > 3:
         promotions.append(promote_note_duration)
-    if lesson_factory.w < 3:
-        return promote_width(lesson_factory)
-    if lesson_factory.w < 4:
+    if fac.w < 2:
+        return promote_width(fac)
+    if fac.w < 3 or (fac.w < 4 and fac.length > 3):
         promotions.append(promote_width)
-    if lesson_factory.hint_prefix > 1:
+    if fac.hint_prefix > 1:
         promotions.append(promote_hint_prefix)
     rand = random.randint(0, len(promotions) - 1)
-    return promotions[rand](lesson_factory)
+    return promotions[rand](fac)
 
 
 def demote_note_duration(lesson_factory):
@@ -71,7 +71,10 @@ def demote_length(lesson_factory):
         return demoted
 
 def promote_length(lesson_factory):
-    return demote_hint_prefix(change_length(lesson_factory, 1))
+    if lesson_factory.hint_prefix < 4:
+        return demote_hint_prefix(change_length(lesson_factory, 1))
+    else:
+        return change_length(lesson_factory, 1)
 
 def demote_width(lesson_factory):
     return change_width(lesson_factory, -1)
@@ -174,7 +177,6 @@ def get_factory_from_lesson(lesson):
 
 
 def get_lesson_factory(recent_lesson_recordings):
-    print 'recent: %s' % str(recent_lesson_recordings)
     if not recent_lesson_recordings:
         return get_base_lesson_factory()
     by_factory = defaultdict(list)
@@ -194,7 +196,7 @@ def get_lesson_factory(recent_lesson_recordings):
         return promote_random(latest)
     if stats['count'] > 10 and stats['success_rate'] < 0.7:
         return demote_random(latest)
-    if stats['count'] <= 20:
+    if stats['count'] <= 30:
         print 'not changing'
         return latest
     else:
@@ -264,7 +266,3 @@ def get_level_from_factory(factory):
     ret *= (1.0/factory.note_duration_millis)
     return int(ret * 1000)
         
-        
-
-
-    

@@ -6,7 +6,7 @@ module.exports = {
         script: './static/js/script.js'
     },
     output: {
-        filename: '[name].bundle2.js',
+        filename: '[name].bundle7.js',
         path: path.resolve(__dirname, 'static/build')
     },
     plugins: [
