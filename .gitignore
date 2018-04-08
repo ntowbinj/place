@@ -3,3 +3,4 @@
 venv/
 config.py
 run.py
+Site/static/build/

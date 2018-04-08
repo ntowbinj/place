@@ -39,7 +39,7 @@ def promote_random(fac):
         promotions.append(promote_note_duration)
     if fac.w < 2:
         return promote_width(fac)
-    if fac.w < 3 or (fac.w < 4 and fac.length > 3):
+    if fac.w < 2 or (fac.w < 3 and fac.max_interval > FOURTH * 2 - 1) or (fac.w < 4 and fac.length > 4):
         promotions.append(promote_width)
     if fac.hint_prefix > 1:
         promotions.append(promote_hint_prefix)
