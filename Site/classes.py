@@ -6,8 +6,7 @@ lesson_fields = [
     'note_duration_millis',
     'wait_time_millis',
     'tolerance',
-    'w',
-    'h',
+    'span',
     'base',
     'spanning_interval',
     'max_interval',
@@ -34,8 +33,7 @@ lesson_factory_fields = [
     'note_duration_millis',
     'hint_prefix',
     'length',
-    'w',
-    'h'
+    'span'
 ]
 
 LessonFactory = namedtuple(

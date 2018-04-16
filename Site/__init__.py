@@ -45,8 +45,7 @@ def make_safe(lesson):
         sequence=lesson.sequence,
         hintPrefix=lesson.hint_prefix,
         base=lesson.base,
-        w=lesson.w,
-        h=lesson.h,
+        span=lesson.span,
         waitTimeMillis=lesson.wait_time_millis,
         tolerance=lesson.tolerance
     )

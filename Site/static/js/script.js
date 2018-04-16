@@ -3,7 +3,9 @@ var globals = {
     downPitches: {},
     DONE_WAIT_SUCCESS: 1000,
     DONE_WAIT_FAIL: 2000,
-    consecutiveEmpties: 0
+    consecutiveEmpties: 0,
+    span: 20,
+    BLANK_GRAY: '#444'
 };
 
 var colors = {
@@ -125,7 +127,7 @@ function getPitch(offset) {
 function getRelativeFromBase(offset) {
     var downNeck = offset % dim.y;
     var string = Math.floor(offset/dim.y);
-    return string * crossColumnInterval + downNeck;
+    return string * FOURTH + downNeck;
 }
 
 function boxW() {
@@ -159,7 +161,7 @@ function getNoteDisplayFromPitch(p) {
     return notes[p % notes.length];
 }
 
-var crossColumnInterval = 5;
+var FOURTH = 5;
 
 function coordToNoteOffset(xy) {
     return xy.x*dim.y + xy.y;
@@ -207,7 +209,18 @@ function getBoxFromCoord(xy) {
         textColor: textColor,
         border: false,
         bounds: getBoundsForCoord(xy),
+        checkActive: function() {
+            var pos = this.xy.x * FOURTH + this.xy.y;
+            if (pos >= globals.span) {
+                this.drawColor(globals.BLANK_GRAY);
+                return false;
+            }
+            return true;
+        },
         draw: function() {
+            if (!this.checkActive()) {
+                return;
+            }
             var textColor;
             if (this.border) {
                 this.drawColor("black");
@@ -255,6 +268,9 @@ function getBoxFromCoord(xy) {
             );
         },
         down: function(skipDraw) {
+            if (!this.checkActive()) {
+                return;
+            }
             noteOn(pitch);
             if (!skipDraw) {
                 this.drawAlt();
@@ -467,10 +483,16 @@ function startBatch(result) {
     doAllLessons(result.lessonList, finishBatch);
 }
 
+function getWidthHeightFromSpan(span) {
+    return _xy(Math.ceil(span/5), 5);
+}
+
 function setGrid(lesson) {
     state.basePitch = lesson.base;
-    dim.x = lesson.w;
-    dim.y = lesson.h;
+    wh = getWidthHeightFromSpan(lesson.span);
+    dim.x = wh.x;
+    dim.y = wh.y;
+    globals.span = lesson.span;
     resize();
 }
 
@@ -632,7 +654,6 @@ function isDone(recording, lesson) {
 
 function setLevel(level) {
     var levelElement = $('#level');
-    console.log('level: ' + level);
     levelElement.text('level ' + level);
 }
 

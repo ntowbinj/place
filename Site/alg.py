@@ -19,8 +19,8 @@ def demote_random(fac):
         demotions.append(demote_interval)
     if fac.length > 2:
         demotions.append(demote_length)
-    if fac.w * FOURTH > fac.max_interval + 2:
-        demotions.append(demote_width)
+    if fac.span > fac.max_interval + 2:
+        demotions.append(demote_span)
     if fac.hint_prefix < fac.length - 1 and fac.hint_prefix < 4:
         demotions.append(demote_hint_prefix)
     if not demotions:
@@ -33,14 +33,14 @@ def promote_random(fac):
     promotions = [
         promote_length
     ]
-    if fac.w * FOURTH > fac.max_interval + 2:
+    if fac.span > fac.max_interval + 2:
         promotions.append(promote_interval)
     if fac.length > 3:
         promotions.append(promote_note_duration)
-    if fac.w < 2:
-        return promote_width(fac)
-    if fac.w < 2 or (fac.w < 3 and fac.max_interval > FOURTH * 2 - 1) or (fac.w < 4 and fac.length > 4):
-        promotions.append(promote_width)
+    if fac.span < 6:
+        return promote_span(fac)
+    if fac.span < 6 or (fac.span < 11 and fac.max_interval > FOURTH * 2 - 1) or (fac.span < 16 and fac.length > 4):
+        promotions.append(promote_span)
     if fac.hint_prefix > 1:
         promotions.append(promote_hint_prefix)
     rand = random.randint(0, len(promotions) - 1)
@@ -58,8 +58,8 @@ def demote_interval(lesson_factory):
 
 def promote_interval(lesson_factory):
     promoted = change_interval(lesson_factory, 1)
-    if promoted.max_interval > lesson_factory.w * FOURTH:
-        return promote_width(promoted)
+    if promoted.max_interval > lesson_factory.span:
+        return promote_span(promoted)
     else:
         return promoted
 
@@ -76,11 +76,11 @@ def promote_length(lesson_factory):
     else:
         return change_length(lesson_factory, 1)
 
-def demote_width(lesson_factory):
-    return change_width(lesson_factory, -1)
+def demote_span(lesson_factory):
+    return change_span(lesson_factory, -1)
 
-def promote_width(lesson_factory):
-    return change_width(lesson_factory, 1)
+def promote_span(lesson_factory):
+    return change_span(lesson_factory, 1)
 
 def demote_hint_prefix(lesson_factory):
     return change_hint_prefix(lesson_factory, 1)
@@ -109,9 +109,9 @@ def change_length(lesson_factory, change):
         **as_dict
     )
 
-def change_width(lesson_factory, change):
+def change_span(lesson_factory, change):
     as_dict = lesson_factory._asdict()
-    as_dict['w'] = change + lesson_factory.w
+    as_dict['span'] = change + lesson_factory.span
     return LessonFactory(
         **as_dict
     )
@@ -144,8 +144,7 @@ def get_base_lesson_factory():
         note_duration_millis=500,
         length=2,
         hint_prefix=1,
-        w=1,
-        h=5
+        span=5
     )
 
 
@@ -169,8 +168,7 @@ def get_factory_from_lesson(lesson):
             note_duration_millis=lesson.note_duration_millis,
             length=lesson.length,
             hint_prefix=lesson.hint_prefix,
-            w=lesson.w,
-            h=lesson.h
+            span=lesson.span
     )
     #print '%s from %s' % (str(ret), str(lesson))
     return ret
@@ -215,8 +213,7 @@ def get_lesson(user_id, factory):
         note_duration_millis=factory.note_duration_millis,
         wait_time_millis=20000,
         tolerance=int(max(1, ((factory.length - factory.hint_prefix)) * 0.4 + (factory.hint_prefix * 0.3 * 0.4))),
-        w=factory.w,
-        h=factory.h,
+        span=factory.span,
         base=base,
         spanning_interval=max(seq) - min(seq),
         max_interval = factory.max_interval,
@@ -243,7 +240,7 @@ def get_rand_up_or_down(intv):
 
 
 def get_lesson_sequence(base, factory):
-    capacity = factory.w * factory.h;
+    span = factory.span
     seq = [0]
     while len(seq) < factory.length:
         intv = get_rand_up_or_down(factory.max_interval)
@@ -252,17 +249,17 @@ def get_lesson_sequence(base, factory):
             continue
         candidate = seq + [nxt]
         gap = max(candidate) - min(candidate)
-        if gap < capacity:
+        if gap < span:
             seq = candidate
     bottom = min(seq)
     relative = [n - bottom for n in seq]
-    slack = capacity - (max(seq) - min(seq))
+    slack = span - (max(seq) - min(seq))
     seq_base_offset = random.randint(0, slack - 1) # randint is inclusive range :(
     return [n + base + seq_base_offset for n in relative]
 
 def get_level_from_factory(factory):
     ret = ((factory.length - factory.hint_prefix) + 0.3 * factory.hint_prefix)
-    ret *= (factory.max_interval * factory.w * factory.h)**0.5
+    ret *= (factory.max_interval * factory.span)**0.5
     ret *= (1.0/factory.note_duration_millis)
     return int(ret * 1000)
         
