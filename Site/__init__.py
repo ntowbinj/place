@@ -90,6 +90,15 @@ def post_event(ev):
     event(g.user_id, ev)
     return 'OK'
 
+@app.route("/progress")
+def progress():
+    return render_template('progress.html')
+
+@app.route("/get-progress/<u>")
+def get_progress(u):
+    user = u if u else g.user_id 
+    return jsonify(alg.get_smoothed_levels(user))
+
 
 def event(user_id, event_name):
     sql = "INSERT INTO events (user_id, timestamp, event_value_id) VALUES (%s, %s, %s)"

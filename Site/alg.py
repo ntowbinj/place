@@ -9,6 +9,7 @@ from classes import LessonFactory, Lesson, LessonCreate, Recording, LessonRecord
 from itertools import groupby
 
 FOURTH = 5
+SMOOTH_RANGE = 50
 
 def demote_random(fac):
     print 'demoting'
@@ -147,13 +148,42 @@ def get_base_lesson_factory():
         span=5
     )
 
+def get_smoothed_levels(user_id):
+    lesrecs = get_lesrecs_for_user(user_id, 50000)
+    levels = [get_level_from_factory(get_factory_from_lesson(lesrec.lesson)) * (1 if lesrec.recording.passed else 0.5) for lesrec in lesrecs]
+    smoothed = []
+    tot = 0
+    for i in range(0, len(levels)):
+        tot += levels[i]
+        if i < SMOOTH_RANGE:
+            smoothed.append(
+                    (
+                        lesrecs[i].lesson.create_time,
+                        int(tot / (1.0 * (i + 1)))
+                    )
+            )
+        else:
+            tot -= levels[i - SMOOTH_RANGE]
+            smoothed.append(
+                    (
+                        lesrecs[i].lesson.create_time,
+                        int(tot / (1.0 * SMOOTH_RANGE))
+                    )
+            )
+    return smoothed
 
-def get_lessons_for_user(user_id):
-    lesrecs = [LessonRecording(**lesrec) for lesrec in data.do_select(
+
+
+
+def get_lesrecs_for_user(user_id, limit):
+    return [LessonRecording(**lesrec) for lesrec in data.do_select(
         dict(lessons=Lesson, recordings=Recording),
         ' FROM lessons JOIN recordings USING (lesson_id) WHERE user_id = %s ORDER BY lessons.lesson_id DESC limit %s',
-        (user_id, 50)
+        (user_id, limit)
     )]
+
+def get_lessons_for_user(user_id):
+    lesrecs = get_lesrecs_for_user(user_id, SMOOTH_RANGE)
     factory = get_lesson_factory(lesrecs)
     print 'now: %s' % str(factory)
     lessons = get_lesson_set(user_id, factory, 5)
