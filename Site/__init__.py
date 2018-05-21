@@ -94,10 +94,9 @@ def post_event(ev):
 def progress():
     return render_template('progress.html')
 
-@app.route("/get-progress/<u>")
-def get_progress(u):
-    user = u if u else g.user_id 
-    return jsonify(alg.get_smoothed_levels(user))
+@app.route("/get-progress")
+def get_progress():
+    return jsonify(alg.get_smoothed_levels(g.user_id))
 
 
 def event(user_id, event_name):

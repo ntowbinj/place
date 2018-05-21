@@ -149,7 +149,7 @@ def get_base_lesson_factory():
     )
 
 def get_smoothed_levels(user_id):
-    lesrecs = get_lesrecs_for_user(user_id, 50000)
+    lesrecs = list(reversed(get_lesrecs_for_user(user_id, 500000)))
     levels = [get_level_from_factory(get_factory_from_lesson(lesrec.lesson)) * (1 if lesrec.recording.passed else 0.5) for lesrec in lesrecs]
     smoothed = []
     tot = 0
@@ -158,7 +158,8 @@ def get_smoothed_levels(user_id):
         if i < SMOOTH_RANGE:
             smoothed.append(
                     (
-                        lesrecs[i].lesson.create_time,
+                        #lesrecs[i].lesson.create_time,
+                        i,
                         int(tot / (1.0 * (i + 1)))
                     )
             )
@@ -166,7 +167,8 @@ def get_smoothed_levels(user_id):
             tot -= levels[i - SMOOTH_RANGE]
             smoothed.append(
                     (
-                        lesrecs[i].lesson.create_time,
+                        #lesrecs[i].lesson.create_time,
+                        i,
                         int(tot / (1.0 * SMOOTH_RANGE))
                     )
             )
